@@ -1,4 +1,5 @@
 import { InputType, Field, ObjectType, Int, Float } from '@nestjs/graphql';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ProductType } from '../../products/dto/products.dto';
 
 @ObjectType()
@@ -46,12 +47,17 @@ export class CartType {
 @InputType()
 export class AddToCartInput {
   @Field()
+  @IsString()
   productId: string;
 
   @Field(() => Int, { defaultValue: 1 })
+  @IsInt()
+  @Min(1)
   quantity: number;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   sessionId?: string;
 }
 

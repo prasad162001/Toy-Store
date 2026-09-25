@@ -55,11 +55,34 @@ export const HomePage: React.FC = () => {
   });
 
   const addToCartMutation = useMutation({
-    mutationFn: (productId: string) =>
-      getGqlClient().request(ADD_TO_CART_MUTATION, { input: { productId, quantity: 1, sessionId } }),
+    mutationFn: async (productId: string) => {
+      console.log('MUTATION FUNCTION CALLED', productId, sessionId);
+
+      try {
+        const result = await getGqlClient().request(ADD_TO_CART_MUTATION, {
+          input: {
+            productId,
+            quantity: 1,
+            sessionId,
+          },
+        });
+
+        console.log('ADD TO CART RESPONSE', result);
+        return result;
+      } catch (error) {
+        console.error('ADD TO CART ERROR', error);
+        throw error;
+      }
+    },
+
     onSuccess: () => {
+      console.log('ADD TO CART SUCCESS');
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       toggleCartDrawer(true);
+    },
+
+    onError: (error) => {
+      console.error('MUTATION ERROR HANDLER', error);
     },
   });
 
@@ -246,8 +269,10 @@ export const HomePage: React.FC = () => {
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={() => addToCartMutation.mutate(product.id)}
-                      startIcon={<ShoppingBag size={16} />}
+                      onClick={() => {
+                        console.log('ADD CLICKED', product.id);
+                        addToCartMutation.mutate(product.id);
+                      }} startIcon={<ShoppingBag size={16} />}
                       sx={{ borderRadius: 3 }}
                     >
                       Add
