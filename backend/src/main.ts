@@ -12,9 +12,10 @@ async function bootstrap() {
       'http://localhost:3001',
       'http://localhost:3002',
       'http://localhost:5173',
-    ], credentials: true,
+      'https://toy-store-frontend-u6t2.onrender.com',
+    ],
+    credentials: true,
   });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
