@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "coupons" ADD COLUMN     "perUserLimit" INTEGER DEFAULT 1,
+ADD COLUMN     "startDate" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "usageLimit" INTEGER;
+
+-- AlterTable
+ALTER TABLE "promotions" ADD COLUMN     "minOrderVal" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "promoType" TEXT NOT NULL DEFAULT 'GENERAL',
+ADD COLUMN     "targetId" TEXT;

@@ -1,0 +1,502 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddToCartInput {
+  productId: String!
+  quantity: Int! = 1
+  sessionId: String
+}
+
+type AddressType {
+  city: String!
+  fullName: String!
+  id: String!
+  isDefault: Boolean!
+  mobile: String!
+  pincode: String!
+  state: String!
+  street: String!
+}
+
+type AdminMetricsType {
+  lowStockProducts: [ProductType!]!
+  recentOrders: [OrderType!]!
+  totalOrders: Int!
+  totalProducts: Int!
+  totalRevenue: Float!
+  totalUsers: Int!
+}
+
+type AuditLogType {
+  action: String!
+  actor: UserType!
+  createdAt: DateTime!
+  entity: String!
+  entityId: String
+  id: String!
+  metadata: String
+}
+
+type AuthResponse {
+  accessToken: String!
+  user: UserType!
+}
+
+type BannerType {
+  ctaLink: String
+  ctaText: String
+  displayOrder: Int!
+  id: String!
+  imageUrl: String!
+  isActive: Boolean!
+  subtitle: String
+  title: String!
+}
+
+type CartItemType {
+  id: String!
+  itemTotal: Float!
+  product: ProductType!
+  productId: String!
+  quantity: Int!
+}
+
+type CartType {
+  deliveryFee: Float!
+  freeDeliveryThreshold: Float!
+  grandTotal: Float!
+  id: String!
+  items: [CartItemType!]!
+  subtotal: Float!
+  totalItems: Int!
+}
+
+type CategoryType {
+  description: String
+  id: String!
+  imageUrl: String
+  name: String!
+  slug: String!
+}
+
+type CouponType {
+  code: String!
+  createdAt: DateTime!
+  discountType: String!
+  discountVal: Float!
+  expiresAt: DateTime
+  id: String!
+  isActive: Boolean!
+  maxDiscount: Float
+  minOrderVal: Float!
+  perUserLimit: Int
+  startDate: DateTime
+  usageLimit: Int
+}
+
+type CouponValidationResponse {
+  discountAmount: Float
+  isValid: Boolean!
+  message: String!
+}
+
+input CreateAddressInput {
+  city: String!
+  fullName: String!
+  isDefault: Boolean! = false
+  mobile: String!
+  pincode: String!
+  state: String!
+  street: String!
+}
+
+input CreateCouponInput {
+  code: String!
+  discountType: String! = "PERCENTAGE"
+  discountVal: Float!
+  expiresAt: DateTime
+  isActive: Boolean! = true
+  maxDiscount: Float
+  minOrderVal: Float! = 0
+  perUserLimit: Int! = 1
+  startDate: DateTime
+  usageLimit: Int
+}
+
+input CreateOrderInput {
+  addressId: String!
+  couponCode: String
+  paymentMethod: String!
+  sessionId: String
+}
+
+input CreateProductInput {
+  categoryId: String!
+  description: String!
+  discountPercent: Float! = 0
+  imageUrls: [String!]!
+  initialStock: Int! = 10
+  isBestSeller: Boolean! = false
+  isFeatured: Boolean! = false
+  isNewArrival: Boolean! = false
+  name: String!
+  price: Float!
+  recommendedAge: String!
+  specifications: String
+}
+
+input CreatePromotionInput {
+  bannerUrl: String
+  description: String!
+  discountVal: Float!
+  endDate: DateTime!
+  minOrderVal: Float! = 0
+  promoType: String! = "GENERAL"
+  startDate: DateTime!
+  targetId: String
+  title: String!
+}
+
+input CreateReviewInput {
+  comment: String!
+  productId: String!
+  rating: Int!
+  title: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type InventoryType {
+  id: String!
+  lowStockThreshold: Float!
+  stockQuantity: Float!
+}
+
+input LoginInput {
+  mobile: String!
+  pin: String!
+}
+
+type Mutation {
+  addProductImage(displayOrder: Float, isPrimary: Boolean, productId: String!, url: String!): ProductImageType!
+  addToCart(input: AddToCartInput!): CartType!
+  createAddress(input: CreateAddressInput!): AddressType!
+  createBanner(ctaLink: String, ctaText: String, imageUrl: String!, subtitle: String, title: String!): BannerType!
+  createCoupon(input: CreateCouponInput!): CouponType!
+  createOrder(input: CreateOrderInput!): OrderType!
+  createProduct(input: CreateProductInput!): ProductType!
+  createPromotion(input: CreatePromotionInput!): PromotionType!
+  createReview(input: CreateReviewInput!): ReviewType!
+  deleteBanner(id: String!): Boolean!
+  deleteCoupon(id: String!): Boolean!
+  deleteProduct(id: String!): Boolean!
+  deleteProductImage(imageId: String!): Boolean!
+  deletePromotion(id: String!): Boolean!
+  login(input: LoginInput!): AuthResponse!
+  markAllNotificationsAsRead: Boolean!
+  markNotificationAsRead(id: String!): Boolean!
+  moderateReview(isApproved: Boolean!, reviewId: String!): ReviewType!
+  register(input: RegisterInput!): AuthResponse!
+  removeCartItem(cartItemId: String!, sessionId: String): CartType!
+  requestReturn(input: RequestReturnInput!): ReturnType!
+  resetPin(input: ResetPinInput!): SimpleStatusResponse!
+  sendOtp(input: SendOtpInput!): SimpleStatusResponse!
+  syncGuestCart(sessionId: String!): CartType!
+  toggleWishlistItem(productId: String!): [WishlistItemType!]!
+  updateCartItem(input: UpdateCartItemInput!, sessionId: String): CartType!
+  updateCoupon(input: UpdateCouponInput!): CouponType!
+  updateOrderStatus(input: UpdateOrderStatusInput!): OrderType!
+  updateProduct(input: UpdateProductInput!): ProductType!
+  updateProductImage(displayOrder: Float, imageId: String!, isPrimary: Boolean): ProductImageType!
+  updatePromotion(input: UpdatePromotionInput!): PromotionType!
+  updateReturnStatus(input: UpdateReturnStatusInput!): ReturnType!
+  updateStock(productId: String!, reason: String, stockQuantity: Int!): InventoryType!
+  verifyOtp(input: VerifyOtpInput!): SimpleStatusResponse!
+}
+
+type NotificationType {
+  createdAt: DateTime!
+  id: String!
+  isRead: Boolean!
+  message: String!
+  title: String!
+  type: String!
+  userId: String!
+}
+
+type OrderItemType {
+  id: String!
+  product: ProductType
+  productId: String!
+  productName: String!
+  quantity: Int!
+  totalPrice: Float!
+  unitPrice: Float!
+}
+
+type OrderStatusHistoryType {
+  createdAt: DateTime!
+  id: String!
+  notes: String
+  status: String!
+}
+
+type OrderType {
+  address: AddressType!
+  couponCode: String
+  createdAt: DateTime!
+  deliveryFee: Float!
+  discount: Float!
+  grandTotal: Float!
+  id: String!
+  items: [OrderItemType!]
+  orderNumber: String!
+  payments: [PaymentType!]
+  returns: [ReturnType!]
+  status: String!
+  statusHistory: [OrderStatusHistoryType!]
+  subtotal: Float!
+  userId: String!
+}
+
+type PaginatedProductsResponse {
+  page: Int!
+  products: [ProductType!]!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+type PaymentType {
+  amount: Float!
+  id: String!
+  method: String!
+  status: String!
+  transactionId: String!
+}
+
+input ProductFilterInput {
+  ageRange: String
+  categorySlug: String
+  inStockOnly: Boolean
+  isBestSeller: Boolean
+  isFeatured: Boolean
+  isNewArrival: Boolean
+  limit: Int = 12
+  maxPrice: Float
+  minPrice: Float
+  page: Int = 1
+  search: String
+  sortBy: String
+}
+
+type ProductImageType {
+  displayOrder: Float!
+  id: String!
+  isPrimary: Boolean!
+  url: String!
+}
+
+type ProductType {
+  averageRating: Float
+  category: CategoryType
+  categoryId: String!
+  description: String!
+  discountPercent: Float!
+  finalPrice: Float
+  id: String!
+  images: [ProductImageType!]
+  inventory: InventoryType
+  isActive: Boolean!
+  isBestSeller: Boolean!
+  isFeatured: Boolean!
+  isNewArrival: Boolean!
+  name: String!
+  price: Float!
+  recommendedAge: String!
+  reviewCount: Int
+  slug: String!
+  specifications: String
+}
+
+type PromotionType {
+  bannerUrl: String
+  description: String!
+  discountVal: Float!
+  endDate: DateTime!
+  id: String!
+  isActive: Boolean!
+  minOrderVal: Float!
+  promoType: String!
+  startDate: DateTime!
+  targetId: String
+  title: String!
+}
+
+type Query {
+  adminAuditLogs: [AuditLogType!]!
+  adminBanners: [BannerType!]!
+  adminCoupons: [CouponType!]!
+  adminMetrics: AdminMetricsType!
+  adminOrders: [OrderType!]!
+  adminPromotions: [PromotionType!]!
+  adminReturns: [ReturnType!]!
+  adminReviews: [ReviewType!]!
+  adminUsers: [UserType!]!
+  banners: [BannerType!]!
+  cart(sessionId: String): CartType!
+  categories: [CategoryType!]!
+  category(slug: String!): CategoryType
+  me: UserType!
+  myAddresses: [AddressType!]!
+  myNotifications: [NotificationType!]!
+  myOrders: [OrderType!]!
+  myReturns: [ReturnType!]!
+  myWishlist: [WishlistItemType!]!
+  order(id: String!): OrderType!
+  product(slug: String!): ProductType!
+  productReviews(productId: String!): [ReviewType!]!
+  products(filter: ProductFilterInput): PaginatedProductsResponse!
+  promotions: [PromotionType!]!
+  unreadNotificationCount: Int!
+  validateCoupon(code: String!, subtotal: Float!): CouponValidationResponse!
+}
+
+input RegisterInput {
+  accountName: String!
+  mobile: String!
+  otp: String!
+  pin: String!
+}
+
+input RequestReturnInput {
+  orderId: String!
+  reason: String!
+  type: String! = "RETURN"
+}
+
+input ResetPinInput {
+  mobile: String!
+  newPin: String!
+  otp: String!
+}
+
+type ReturnType {
+  createdAt: DateTime!
+  id: String!
+  order: OrderType
+  orderId: String!
+  reason: String!
+  status: String!
+  type: String!
+}
+
+type ReviewType {
+  comment: String!
+  createdAt: DateTime!
+  id: String!
+  isApproved: Boolean!
+  product: ProductType
+  productId: String!
+  rating: Int!
+  title: String
+  user: UserType
+}
+
+input SendOtpInput {
+  mobile: String!
+}
+
+type SimpleStatusResponse {
+  message: String!
+  success: Boolean!
+}
+
+type Subscription {
+  notificationCreated: NotificationType!
+}
+
+input UpdateCartItemInput {
+  cartItemId: String!
+  quantity: Int!
+}
+
+input UpdateCouponInput {
+  code: String
+  discountType: String
+  discountVal: Float
+  expiresAt: DateTime
+  id: String!
+  isActive: Boolean
+  maxDiscount: Float
+  minOrderVal: Float
+  perUserLimit: Int
+  startDate: DateTime
+  usageLimit: Int
+}
+
+input UpdateOrderStatusInput {
+  notes: String
+  orderId: String!
+  status: String!
+}
+
+input UpdateProductInput {
+  categoryId: String
+  description: String
+  discountPercent: Float
+  id: String!
+  isActive: Boolean
+  isBestSeller: Boolean
+  isFeatured: Boolean
+  isNewArrival: Boolean
+  name: String
+  price: Float
+  recommendedAge: String
+  specifications: String
+}
+
+input UpdatePromotionInput {
+  bannerUrl: String
+  description: String
+  discountVal: Float
+  endDate: DateTime
+  id: String!
+  isActive: Boolean
+  minOrderVal: Float
+  promoType: String
+  startDate: DateTime
+  targetId: String
+  title: String
+}
+
+input UpdateReturnStatusInput {
+  notes: String
+  returnId: String!
+  status: String!
+}
+
+type UserType {
+  accountName: String!
+  createdAt: DateTime
+  email: String
+  id: String!
+  isActive: Boolean
+  isVerified: Boolean
+  mobile: String!
+  roles: [String!]
+}
+
+input VerifyOtpInput {
+  mobile: String!
+  otp: String!
+}
+
+type WishlistItemType {
+  id: String!
+  product: ProductType!
+  productId: String!
+}
