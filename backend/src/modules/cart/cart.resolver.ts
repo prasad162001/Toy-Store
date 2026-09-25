@@ -5,7 +5,7 @@ import { CurrentUser } from '../auth/decorators/auth.decorator';
 
 @Resolver(() => CartType)
 export class CartResolver {
-  constructor(private cartService: CartService) {}
+  constructor(private cartService: CartService) { }
 
   @Query(() => CartType)
   async cart(
@@ -20,6 +20,11 @@ export class CartResolver {
     @Args('input') input: AddToCartInput,
     @CurrentUser() user?: any,
   ): Promise<CartType> {
+    console.log('=== ADD TO CART RESOLVER ===');
+    console.log('INPUT:', JSON.stringify(input));
+    console.log('PRODUCT ID:', input?.productId);
+    console.log('SESSION ID:', input?.sessionId);
+
     return this.cartService.addToCart(input, user?.id);
   }
 
