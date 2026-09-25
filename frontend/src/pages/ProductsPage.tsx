@@ -82,7 +82,7 @@ export const ProductsPage: React.FC = () => {
     : 'All Products';
 
   const FilterSidebarContent = (
-    <Box sx={{ width: 280, p: 1 }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', p: 1 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 800 }}>Filters</Typography>
         <Button size="small" onClick={() => { setPriceRange([0, 10000]); setSelectedAge(''); setInStockOnly(false); }}>
@@ -93,7 +93,7 @@ export const ProductsPage: React.FC = () => {
       {/* Category Selection */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Category</Typography>
-        <Stack spacing={1}>
+        <Stack spacing={1} sx={{ width: '100%', minWidth: 0 }}>
           {[
             { label: 'All Toys', slug: '' },
             { label: 'Boys', slug: 'boys' },
@@ -104,7 +104,16 @@ export const ProductsPage: React.FC = () => {
               key={cat.slug}
               variant={categorySlug === cat.slug || (!categorySlug && !cat.slug) ? 'contained' : 'text'}
               onClick={() => navigate(cat.slug ? `/products/${cat.slug}` : '/products')}
-              sx={{ justifyContent: 'flex-start', borderRadius: 3 }}
+              sx={{
+                width: '100%',
+                minWidth: 0,
+                maxWidth: '100%',
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                whiteSpace: 'normal',
+                overflowWrap: 'anywhere',
+                borderRadius: 3,
+              }}
             >
               {cat.label}
             </Button>
@@ -117,21 +126,23 @@ export const ProductsPage: React.FC = () => {
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
           Price Range (₹{priceRange[0]} - ₹{priceRange[1]})
         </Typography>
-        <Slider
-          value={priceRange}
-          onChange={(_, val) => setPriceRange(val as number[])}
-          valueLabelDisplay="auto"
-          min={0}
-          max={10000}
-          step={500}
-          sx={{ color: '#6C5CE7' }}
-        />
+        <Box sx={{ width: '100%', minWidth: 0, px: 1, boxSizing: 'border-box' }}>
+          <Slider
+            value={priceRange}
+            onChange={(_, val) => setPriceRange(val as number[])}
+            valueLabelDisplay="auto"
+            min={0}
+            max={10000}
+            step={500}
+            sx={{ width: '100%', color: '#6C5CE7' }}
+          />
+        </Box>
       </Box>
 
       {/* Age Group Filter */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Age Group</Typography>
-        <Stack direction="row" flexWrap="wrap" gap={1}>
+        <Stack direction="row" flexWrap="wrap" gap={1} sx={{ width: '100%', minWidth: 0 }}>
           {['2-5 years', '4-8 years', '6-10 years', '8+ years'].map((age) => (
             <Chip
               key={age}
@@ -139,7 +150,7 @@ export const ProductsPage: React.FC = () => {
               clickable
               color={selectedAge === age ? 'primary' : 'default'}
               onClick={() => setSelectedAge(selectedAge === age ? '' : age)}
-              sx={{ fontWeight: 600 }}
+              sx={{ maxWidth: '100%', fontWeight: 600 }}
             />
           ))}
         </Stack>
@@ -187,15 +198,15 @@ export const ProductsPage: React.FC = () => {
 
       <Grid container spacing={4}>
         {/* Desktop Filter Sidebar */}
-        <Grid item md={3} sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Box sx={{ position: 'sticky', top: 90, p: 3, borderRadius: 4, border: '1px solid rgba(226, 224, 240, 0.8)', background: '#FFFFFF' }}>
+        <Grid item md={3} sx={{ display: { xs: 'none', md: 'block' }, minWidth: 0 }}>
+          <Box sx={{ position: 'sticky', top: 90, width: '100%', minWidth: 0, boxSizing: 'border-box', p: 3, borderRadius: 4, border: '1px solid rgba(226, 224, 240, 0.8)', background: '#FFFFFF' }}>
             {FilterSidebarContent}
           </Box>
         </Grid>
 
         {/* Mobile Filter Drawer */}
         <Drawer anchor="left" open={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ width: { xs: '100vw', sm: 320 }, maxWidth: '100vw', minWidth: 0, boxSizing: 'border-box', p: { xs: 2, sm: 3 }, overflowX: 'hidden' }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
               <IconButton onClick={() => setFilterDrawerOpen(false)}><X size={20} /></IconButton>
             </Box>
@@ -204,7 +215,7 @@ export const ProductsPage: React.FC = () => {
         </Drawer>
 
         {/* Product Grid */}
-        <Grid item xs={12} md={9}>
+        <Grid item xs={12} md={9} sx={{ minWidth: 0 }}>
           {products.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 10, background: '#FFFFFF', borderRadius: 4, border: '1px solid #E2E0F0' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>No products found matching your criteria</Typography>

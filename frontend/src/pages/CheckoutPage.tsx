@@ -82,6 +82,9 @@ export const CheckoutPage: React.FC = () => {
       setSelectedAddressId(res.createAddress.id);
       setShowAddressForm(false);
     },
+    onError: (err: any) => {
+      setError(err?.response?.errors?.[0]?.message || 'Failed to save address');
+    },
   });
 
   // Coupon Mutation
@@ -131,6 +134,21 @@ export const CheckoutPage: React.FC = () => {
 
   const handleAddAddressSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    const existingAddress = addresses.find(
+      (address: any) =>
+        address.fullName === fullName &&
+        address.mobile === mobile &&
+        address.street === street &&
+        address.city === city &&
+        address.state === state &&
+        address.pincode === pincode,
+    );
+    if (existingAddress) {
+      setSelectedAddressId(existingAddress.id);
+      setShowAddressForm(false);
+      return;
+    }
     createAddressMutation.mutate({ fullName, mobile, street, city, state, pincode, isDefault: true });
   };
 

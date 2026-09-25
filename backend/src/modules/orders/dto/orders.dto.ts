@@ -1,4 +1,5 @@
 import { InputType, Field, ObjectType, Int, Float } from '@nestjs/graphql';
+import { IsBoolean, IsString } from 'class-validator';
 import { ProductType } from '../../products/dto/products.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, ReturnStatus } from '@prisma/client';
 
@@ -32,24 +33,31 @@ export class AddressType {
 @InputType()
 export class CreateAddressInput {
   @Field()
+  @IsString()
   fullName: string;
 
   @Field()
+  @IsString()
   mobile: string;
 
   @Field()
+  @IsString()
   street: string;
 
   @Field()
+  @IsString()
   city: string;
 
   @Field()
+  @IsString()
   state: string;
 
   @Field()
+  @IsString()
   pincode: string;
 
   @Field({ defaultValue: false })
+  @IsBoolean()
   isDefault?: boolean;
 }
 
