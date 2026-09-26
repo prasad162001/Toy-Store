@@ -15,6 +15,11 @@ export class AuthResolver {
   }
 
   @Mutation(() => SimpleStatusResponse)
+  async resendOtp(@Args('input') input: SendOtpInput): Promise<SimpleStatusResponse> {
+    return this.authService.resendOtp(input);
+  }
+
+  @Mutation(() => SimpleStatusResponse)
   async verifyOtp(@Args('input') input: VerifyOtpInput): Promise<SimpleStatusResponse> {
     return this.authService.verifyOtp(input);
   }

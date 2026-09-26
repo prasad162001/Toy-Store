@@ -1,4 +1,5 @@
 import { InputType, Field, ObjectType, Int, Float } from '@nestjs/graphql';
+import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 @ObjectType()
 export class CategoryType {
@@ -162,77 +163,119 @@ export class ProductFilterInput {
 @InputType()
 export class CreateProductInput {
   @Field()
+  @IsString()
   name: string;
 
   @Field()
+  @IsString()
   description: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   specifications?: string;
 
   @Field(() => Float)
+  @IsNumber()
+  @Min(0)
   price: number;
 
   @Field(() => Float, { defaultValue: 0 })
+  @IsNumber()
+  @Min(0)
   discountPercent?: number;
 
   @Field()
+  @IsString()
   recommendedAge: string;
 
   @Field()
+  @IsString()
   categoryId: string;
 
   @Field(() => Int, { defaultValue: 10 })
+  @IsInt()
+  @Min(0)
   initialStock?: number;
 
   @Field(() => [String])
+  @IsArray()
+  @IsString({ each: true })
   imageUrls: string[];
 
   @Field({ defaultValue: false })
+  @IsBoolean()
   isFeatured?: boolean;
 
   @Field({ defaultValue: false })
+  @IsBoolean()
   isNewArrival?: boolean;
 
   @Field({ defaultValue: false })
+  @IsBoolean()
   isBestSeller?: boolean;
 }
 
 @InputType()
 export class UpdateProductInput {
   @Field()
+  @IsString()
   id: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   specifications?: string;
 
   @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   price?: number;
 
   @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   discountPercent?: number;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   recommendedAge?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   categoryId?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isFeatured?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isNewArrival?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isBestSeller?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
 }

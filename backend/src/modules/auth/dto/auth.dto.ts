@@ -1,5 +1,5 @@
 import { InputType, Field, ObjectType } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 @InputType()
 export class SendOtpInput {
@@ -42,6 +42,11 @@ export class RegisterInput {
   @IsNotEmpty()
   @Length(6, 6, { message: 'PIN must be exactly 6 digits' })
   pin: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
 }
 
 @InputType()
@@ -73,6 +78,11 @@ export class ResetPinInput {
   @IsNotEmpty()
   @Length(6, 6)
   newPin: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
 }
 
 @ObjectType()
@@ -118,4 +128,7 @@ export class SimpleStatusResponse {
 
   @Field()
   message: string;
+
+  @Field({ nullable: true })
+  verificationToken?: string;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { getGqlClient } from '../../services/graphql';
 import {
   SEND_OTP_MUTATION,
+  RESEND_OTP_MUTATION,
   VERIFY_OTP_MUTATION,
   REGISTER_MUTATION,
   LOGIN_MUTATION,
@@ -39,7 +40,9 @@ export const AuthModal: React.FC = () => {
   const [mobile, setMobile] = useState('');
   const [accountName, setAccountName] = useState('');
   const [otp, setOtp] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
   const [pin, setPin] = useState('');
+  const [resendSeconds, setResendSeconds] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +52,20 @@ export const AuthModal: React.FC = () => {
     setMobile('');
     setAccountName('');
     setOtp('');
+    setVerificationToken('');
     setPin('');
+    setResendSeconds(0);
     setError(null);
     setSuccessMsg(null);
     setStep('mobile');
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return undefined;
+    const timer = window.setInterval(() => setResendSeconds((seconds) => Math.max(seconds - 1, 0)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
 
   const handleClose = () => {
     resetForm();
@@ -102,10 +113,28 @@ export const AuthModal: React.FC = () => {
 
       if (res.sendOtp?.success) {
         setSuccessMsg(res.sendOtp.message);
+        setVerificationToken('');
+        setResendSeconds(30);
         setStep('otp');
       }
     } catch (err: any) {
       setError(err?.response?.errors?.[0]?.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res: any = await getGqlClient().request(RESEND_OTP_MUTATION, { input: { mobile } });
+      if (res.resendOtp?.success) {
+        setSuccessMsg(res.resendOtp.message);
+        setResendSeconds(30);
+      }
+    } catch (err: any) {
+      setError(err?.response?.errors?.[0]?.message || 'Failed to resend OTP');
     } finally {
       setLoading(false);
     }
@@ -124,6 +153,7 @@ export const AuthModal: React.FC = () => {
 
       if (res.verifyOtp?.success) {
         setSuccessMsg('OTP verified successfully!');
+        setVerificationToken(res.verifyOtp.verificationToken || '');
         setStep('pin');
       }
     } catch (err: any) {
@@ -141,7 +171,7 @@ export const AuthModal: React.FC = () => {
 
     try {
       const res: any = await getGqlClient().request(REGISTER_MUTATION, {
-        input: { mobile, otp, accountName, pin },
+        input: { mobile, otp, accountName, pin, verificationToken },
       });
 
       if (res.register?.accessToken) {
@@ -164,7 +194,7 @@ export const AuthModal: React.FC = () => {
 
     try {
       const res: any = await getGqlClient().request(RESET_PIN_MUTATION, {
-        input: { mobile, otp, newPin: pin },
+        input: { mobile, otp, newPin: pin, verificationToken },
       });
 
       if (res.resetPin?.success) {
@@ -320,6 +350,9 @@ export const AuthModal: React.FC = () => {
                   <Button type="submit" variant="contained" size="large" disabled={loading} sx={{ py: 1.5 }}>
                     {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify OTP'}
                   </Button>
+                  <Button type="button" variant="text" disabled={loading || resendSeconds > 0} onClick={handleResendOtp}>
+                    {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : 'Resend OTP'}
+                  </Button>
                 </Stack>
               </Box>
             )}
@@ -394,6 +427,9 @@ export const AuthModal: React.FC = () => {
                   </Alert>
                   <Button type="submit" variant="contained" size="large" disabled={loading}>
                     {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify OTP'}
+                  </Button>
+                  <Button type="button" variant="text" disabled={loading || resendSeconds > 0} onClick={handleResendOtp}>
+                    {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : 'Resend OTP'}
                   </Button>
                 </Stack>
               </Box>

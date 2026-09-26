@@ -49,6 +49,9 @@ import {
   UPDATE_STOCK_MUTATION,
   ADMIN_USERS_QUERY,
   ADMIN_AUDIT_LOGS_QUERY,
+  GET_CATEGORIES_QUERY,
+  CREATE_PRODUCT_MUTATION,
+  UPDATE_PRODUCT_MUTATION,
 } from '../graphql/queries';
 
 export const AdminPage: React.FC = () => {
@@ -57,7 +60,16 @@ export const AdminPage: React.FC = () => {
   const roles = user?.roles || [];
   const isStaffOnly = roles.includes('STAFF') && !roles.includes('ADMIN') && !roles.includes('SUPER_ADMIN');
   const canManageUsers = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+  const canManageProducts = canManageUsers;
   const [activeTab, setActiveTab] = useState(0);
+
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [productDialogMode, setProductDialogMode] = useState<'create' | 'edit'>('create');
+  const [productForm, setProductForm] = useState<any>({
+    id: '', name: '', description: '', specifications: '', price: 0, discountPercent: 0,
+    recommendedAge: '', categoryId: '', initialStock: 10, imageUrls: '', isFeatured: false,
+    isNewArrival: false, isBestSeller: false, isActive: true,
+  });
 
   // Stock dialog state
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -76,6 +88,11 @@ export const AdminPage: React.FC = () => {
     enabled: canManageUsers,
   });
   const { data: productsData } = useQuery({ queryKey: ['adminProducts'], queryFn: () => getGqlClient().request(GET_PRODUCTS_QUERY, { filter: { limit: 50 } }) });
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => getGqlClient().request(GET_CATEGORIES_QUERY),
+    enabled: canManageProducts,
+  });
   const { data: ordersData } = useQuery({ queryKey: ['adminOrders'], queryFn: () => getGqlClient().request(ADMIN_ORDERS_QUERY) });
   const { data: usersData } = useQuery({
     queryKey: ['adminUsers'],
@@ -114,13 +131,50 @@ export const AdminPage: React.FC = () => {
   const orders = (ordersData as any)?.adminOrders || [];
   const users = (usersData as any)?.adminUsers || [];
   const auditLogs = (auditData as any)?.adminAuditLogs || [];
+  const categories = (categoriesData as any)?.categories || [];
+
+  const productMutation = useMutation({
+    mutationFn: (vars: any) => getGqlClient().request(productDialogMode === 'create' ? CREATE_PRODUCT_MUTATION : UPDATE_PRODUCT_MUTATION, { input: vars }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['adminMetrics'] });
+      setProductDialogOpen(false);
+    },
+  });
+
+  const openCreateProduct = () => {
+    setProductDialogMode('create');
+    setProductForm({ id: '', name: '', description: '', specifications: '', price: 0, discountPercent: 0, recommendedAge: '', categoryId: categories[0]?.id || '', initialStock: 10, imageUrls: '', isFeatured: false, isNewArrival: false, isBestSeller: false, isActive: true });
+    setProductDialogOpen(true);
+  };
+
+  const openEditProduct = (product: any) => {
+    setProductDialogMode('edit');
+    setProductForm({ ...product, imageUrls: product.images?.map((image: any) => image.url).join(', ') || '' });
+    setProductDialogOpen(true);
+  };
+
+  const handleProductSave = () => {
+    if (productDialogMode === 'create') {
+      productMutation.mutate({
+        ...productForm,
+        imageUrls: productForm.imageUrls.split(',').map((url: string) => url.trim()).filter(Boolean),
+      });
+    } else {
+      const { imageUrls, initialStock, ...updateInput } = productForm;
+      productMutation.mutate(updateInput);
+    }
+  };
 
   return (
     <Container maxWidth="xl" sx={{ pt: 4, pb: 10 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800 }}>
-          Admin & Store Operations Dashboard
-        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800 }}>Admin & Store Operations Dashboard</Typography>
+        {canManageProducts && (
+          <Button variant="contained" startIcon={<Plus size={18} />} onClick={openCreateProduct}>
+            Add Product
+          </Button>
+        )}
 
       </Box>
 
@@ -208,6 +262,11 @@ export const AdminPage: React.FC = () => {
                     <Chip label={p.inventory?.stockQuantity} color={p.inventory?.stockQuantity <= 5 ? 'error' : 'success'} size="small" />
                   </TableCell>
                   <TableCell>
+                    {canManageProducts && (
+                      <Button size="small" variant="outlined" sx={{ mr: 1 }} onClick={() => openEditProduct(p)}>
+                        Edit
+                      </Button>
+                    )}
                     <Button
                       size="small"
                       variant="outlined"
@@ -320,6 +379,46 @@ export const AdminPage: React.FC = () => {
       )}
 
       {/* Stock Dialog */}
+      <Dialog open={productDialogOpen} onClose={() => setProductDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{productDialogMode === 'create' ? 'Add Product' : 'Edit Product'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField label="Name" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} fullWidth />
+            <TextField label="Description" value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} multiline minRows={2} fullWidth />
+            <TextField label="Specifications" value={productForm.specifications} onChange={(e) => setProductForm({ ...productForm, specifications: e.target.value })} fullWidth />
+            <Stack direction="row" spacing={2}>
+              <TextField label="Price" type="number" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })} fullWidth />
+              <TextField label="Discount %" type="number" value={productForm.discountPercent} onChange={(e) => setProductForm({ ...productForm, discountPercent: Number(e.target.value) })} fullWidth />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField label="Recommended Age" value={productForm.recommendedAge} onChange={(e) => setProductForm({ ...productForm, recommendedAge: e.target.value })} fullWidth />
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select value={productForm.categoryId} label="Category" onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}>
+                  {categories.map((category: any) => <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Stack>
+            {productDialogMode === 'create' && <TextField label="Initial Stock" type="number" value={productForm.initialStock} onChange={(e) => setProductForm({ ...productForm, initialStock: Number(e.target.value) })} fullWidth />}
+            {productDialogMode === 'create' && <TextField label="Image URLs (comma separated)" value={productForm.imageUrls} onChange={(e) => setProductForm({ ...productForm, imageUrls: e.target.value })} fullWidth />}
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              {['isFeatured', 'isNewArrival', 'isBestSeller'].map((field) => (
+                <Button key={field} variant={productForm[field] ? 'contained' : 'outlined'} onClick={() => setProductForm({ ...productForm, [field]: !productForm[field] })}>
+                  {field.replace('is', '')}
+                </Button>
+              ))}
+              {productDialogMode === 'edit' && <Button variant={productForm.isActive ? 'contained' : 'outlined'} onClick={() => setProductForm({ ...productForm, isActive: !productForm.isActive })}>Active</Button>}
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProductDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleProductSave} disabled={productMutation.isPending || !productForm.name || !productForm.categoryId}>
+            {productMutation.isPending ? 'Saving...' : 'Save Product'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={stockDialogOpen} onClose={() => setStockDialogOpen(false)}>
         <DialogTitle>Update Stock Quantity</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>

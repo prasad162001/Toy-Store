@@ -189,7 +189,23 @@ export const HomePage: React.FC = () => {
               >
                 <Chip
                   label={`${cat.name} Toys`}
-                  sx={{ position: 'absolute', top: 16, left: 16, backgroundColor: '#6C5CE7', color: '#FFFFFF', fontWeight: 700 }}
+                  sx={{
+                    position: 'absolute',
+                    top: 16,
+                    left: 16,
+                    maxWidth: 'calc(100% - 32px)',
+                    height: 'auto',
+                    backgroundColor: '#6C5CE7',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      overflowWrap: 'anywhere',
+                      textAlign: 'center',
+                      py: 0.5,
+                    },
+                  }}
                 />
                 <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
                   {cat.name} Collection

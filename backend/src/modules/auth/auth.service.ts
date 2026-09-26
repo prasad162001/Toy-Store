@@ -4,35 +4,41 @@ import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { SendOtpInput, VerifyOtpInput, RegisterInput, LoginInput, ResetPinInput, AuthResponse, SimpleStatusResponse } from './dto/auth.dto';
 import { RoleName } from '@prisma/client';
+import { OtpService } from './otp/otp.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private otpService: OtpService,
   ) {}
 
   async sendOtp(input: SendOtpInput): Promise<SimpleStatusResponse> {
-    // Development OTP is always 123456
+    await this.otpService.sendOtp(input.mobile);
     return {
       success: true,
-      message: `OTP sent successfully to ${input.mobile}. (Development mode OTP: 123456)`,
+      message: `OTP sent successfully to ${input.mobile}`,
     };
   }
 
+  async resendOtp(input: SendOtpInput): Promise<SimpleStatusResponse> {
+    await this.otpService.resendOtp(input.mobile);
+    return { success: true, message: `OTP resent successfully to ${input.mobile}` };
+  }
+
   async verifyOtp(input: VerifyOtpInput): Promise<SimpleStatusResponse> {
-    if (input.otp !== '123456') {
-      throw new BadRequestException('Invalid or expired OTP. Use development OTP 123456');
-    }
+    const verificationToken = await this.otpService.verifyOtp(input.mobile, input.otp);
     return {
       success: true,
       message: 'OTP verified successfully',
+      verificationToken,
     };
   }
 
   async register(input: RegisterInput): Promise<AuthResponse> {
-    if (input.otp !== '123456') {
-      throw new BadRequestException('Invalid or expired OTP. Use development OTP 123456');
+    if (!input.verificationToken || !this.otpService.consumeVerificationToken(input.mobile, input.verificationToken)) {
+      throw new BadRequestException('Please verify the OTP before setting your PIN');
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -122,8 +128,8 @@ export class AuthService {
   }
 
   async resetPin(input: ResetPinInput): Promise<SimpleStatusResponse> {
-    if (input.otp !== '123456') {
-      throw new BadRequestException('Invalid or expired OTP. Use development OTP 123456');
+    if (!input.verificationToken || !this.otpService.consumeVerificationToken(input.mobile, input.verificationToken)) {
+      throw new BadRequestException('Please verify the OTP before resetting your PIN');
     }
 
     const user = await this.prisma.user.findUnique({

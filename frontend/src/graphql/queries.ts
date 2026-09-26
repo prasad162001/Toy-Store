@@ -10,11 +10,21 @@ export const SEND_OTP_MUTATION = gql`
   }
 `;
 
+export const RESEND_OTP_MUTATION = gql`
+  mutation ResendOtp($input: SendOtpInput!) {
+    resendOtp(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
 export const VERIFY_OTP_MUTATION = gql`
   mutation VerifyOtp($input: VerifyOtpInput!) {
     verifyOtp(input: $input) {
       success
       message
+      verificationToken
     }
   }
 `;
@@ -396,6 +406,24 @@ export const ADMIN_METRICS_QUERY = gql`
           stockQuantity
         }
       }
+    }
+  }
+`;
+
+export const CREATE_PRODUCT_MUTATION = gql`
+  mutation CreateProduct($input: CreateProductInput!) {
+    createProduct(input: $input) {
+      id
+      name
+    }
+  }
+`;
+
+export const UPDATE_PRODUCT_MUTATION = gql`
+  mutation UpdateProduct($input: UpdateProductInput!) {
+    updateProduct(input: $input) {
+      id
+      name
     }
   }
 `;
