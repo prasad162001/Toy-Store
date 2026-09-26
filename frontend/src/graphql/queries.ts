@@ -88,6 +88,7 @@ export const GET_BANNERS_QUERY = gql`
       title
       subtitle
       imageUrl
+      mediaType
       ctaText
       ctaLink
       displayOrder
@@ -97,19 +98,19 @@ export const GET_BANNERS_QUERY = gql`
 
 export const ADMIN_BANNERS_QUERY = gql`
   query AdminBanners {
-    adminBanners { id title subtitle imageUrl ctaText ctaLink displayOrder isActive }
+    adminBanners { id title subtitle imageUrl mediaType ctaText ctaLink displayOrder isActive }
   }
 `;
 
 export const CREATE_BANNER_MUTATION = gql`
-  mutation CreateBanner($title: String!, $imageUrl: String!, $subtitle: String, $ctaText: String, $ctaLink: String) {
-    createBanner(title: $title, imageUrl: $imageUrl, subtitle: $subtitle, ctaText: $ctaText, ctaLink: $ctaLink) { id title imageUrl displayOrder isActive }
+  mutation CreateBanner($title: String!, $imageUrl: String!, $mediaType: String, $subtitle: String, $ctaText: String, $ctaLink: String) {
+    createBanner(title: $title, imageUrl: $imageUrl, mediaType: $mediaType, subtitle: $subtitle, ctaText: $ctaText, ctaLink: $ctaLink) { id title imageUrl mediaType displayOrder isActive }
   }
 `;
 
 export const UPDATE_BANNER_MUTATION = gql`
-  mutation UpdateBanner($id: String!, $title: String, $subtitle: String, $imageUrl: String, $ctaText: String, $ctaLink: String, $displayOrder: Int, $isActive: Boolean) {
-    updateBanner(id: $id, title: $title, subtitle: $subtitle, imageUrl: $imageUrl, ctaText: $ctaText, ctaLink: $ctaLink, displayOrder: $displayOrder, isActive: $isActive) { id title imageUrl displayOrder isActive }
+  mutation UpdateBanner($id: String!, $title: String, $subtitle: String, $imageUrl: String, $mediaType: String, $ctaText: String, $ctaLink: String, $displayOrder: Int, $isActive: Boolean) {
+    updateBanner(id: $id, title: $title, subtitle: $subtitle, imageUrl: $imageUrl, mediaType: $mediaType, ctaText: $ctaText, ctaLink: $ctaLink, displayOrder: $displayOrder, isActive: $isActive) { id title imageUrl mediaType displayOrder isActive }
   }
 `;
 
@@ -271,6 +272,7 @@ export const CREATE_ORDER_MUTATION = gql`
     createOrder(input: $input) {
       id
       orderNumber
+      addressId
       grandTotal
       status
     }
@@ -510,6 +512,12 @@ export const UPDATE_ORDER_STATUS_MUTATION = gql`
   }
 `;
 
+export const UPDATE_ORDER_MUTATION = gql`
+  mutation UpdateOrder($input: UpdateOrderInput!) {
+    updateOrder(input: $input) { id status addressId address { fullName street city state pincode } }
+  }
+`;
+
 export const UPDATE_STOCK_MUTATION = gql`
   mutation UpdateStock($productId: String!, $stockQuantity: Int!, $reason: String) {
     updateStock(productId: $productId, stockQuantity: $stockQuantity, reason: $reason) {
@@ -525,6 +533,7 @@ export const ADMIN_COUPONS_QUERY = gql`
       id
       code
       discountType
+      addressId
       discountVal
       minOrderVal
       expiresAt

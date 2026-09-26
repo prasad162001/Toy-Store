@@ -156,6 +156,9 @@ export class OrderType {
   @Field()
   userId: string;
 
+  @Field()
+  addressId: string;
+
   @Field(() => AddressType)
   address: AddressType;
 
@@ -215,6 +218,21 @@ export class UpdateOrderStatusInput {
 
   @Field()
   status: string; // CONFIRMED, PACKED, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+
+  @Field({ nullable: true })
+  notes?: string;
+}
+
+@InputType()
+export class UpdateOrderInput {
+  @Field()
+  orderId: string;
+
+  @Field({ nullable: true })
+  status?: string;
+
+  @Field({ nullable: true })
+  addressId?: string;
 
   @Field({ nullable: true })
   notes?: string;

@@ -11,6 +11,7 @@ import {
   ReturnType,
   RequestReturnInput,
   UpdateReturnStatusInput,
+  UpdateOrderInput,
 } from './dto/orders.dto';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -67,6 +68,13 @@ export class OrdersResolver {
     @Args('input') input: UpdateOrderStatusInput,
   ): Promise<OrderType> {
     return this.ordersService.updateOrderStatus(user.id, input, user.roles || []);
+  }
+
+  @Mutation(() => OrderType)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  async updateOrder(@CurrentUser() user: any, @Args('input') input: UpdateOrderInput): Promise<OrderType> {
+    return this.ordersService.updateOrder(user.id, input, user.roles || []);
   }
 
   @Query(() => [AddressType])

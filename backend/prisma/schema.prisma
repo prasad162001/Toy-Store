@@ -466,6 +466,7 @@ model Banner {
   title       String
   subtitle    String?
   imageUrl    String
+  mediaType   String   @default("IMAGE")
   ctaText     String?  @default("Shop Now")
   ctaLink     String?  @default("/products")
   displayOrder Int     @default(0)

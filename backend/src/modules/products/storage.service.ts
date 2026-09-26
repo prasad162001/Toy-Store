@@ -10,7 +10,7 @@ export interface StoredImage {
 }
 
 export interface ImageStorageProvider {
-  store(buffer: Buffer, extension: string, mimeType: string): Promise<StoredImage>;
+  store(buffer: Buffer, extension: string, mimeType: string, resourceType?: 'image' | 'video'): Promise<StoredImage>;
   remove?(keyOrUrl: string): Promise<void>;
 }
 
@@ -18,7 +18,7 @@ export interface ImageStorageProvider {
 export class LocalImageStorageProvider implements ImageStorageProvider {
   private readonly directory = join(process.cwd(), 'uploads', 'products');
 
-  async store(buffer: Buffer, extension: string, _mimeType: string): Promise<StoredImage> {
+  async store(buffer: Buffer, extension: string, _mimeType: string, _resourceType = 'image'): Promise<StoredImage> {
     await mkdir(this.directory, { recursive: true });
     const key = `products/${randomUUID()}${extension}`;
     await writeFile(join(process.cwd(), 'uploads', key),
@@ -38,7 +38,7 @@ export class LocalImageStorageProvider implements ImageStorageProvider {
 
 @Injectable()
 export class ObjectImageStorageProvider implements ImageStorageProvider {
-  async store(_buffer: Buffer, _extension: string, _mimeType: string): Promise<StoredImage> {
+  async store(_buffer: Buffer, _extension: string, _mimeType: string, _resourceType = 'image'): Promise<StoredImage> {
     if (!process.env.STORAGE_UPLOAD_URL || !process.env.STORAGE_PUBLIC_URL) {
       throw new BadRequestException('Object storage is not configured');
     }
@@ -55,12 +55,12 @@ export class CloudinaryImageStorageProvider implements ImageStorageProvider {
     cloudinary.config({ secure: true });
   }
 
-  store(buffer: Buffer, _extension: string, mimeType: string): Promise<StoredImage> {
+  store(buffer: Buffer, _extension: string, mimeType: string, resourceType: 'image' | 'video' = 'image'): Promise<StoredImage> {
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         {
           folder: 'toy-store/products',
-          resource_type: 'image',
+          resource_type: resourceType,
           public_id: randomUUID(),
           type: 'upload',
         },
@@ -93,8 +93,8 @@ export class ImageStorageService {
         ? new ObjectImageStorageProvider()
         : new LocalImageStorageProvider();
 
-  async store(buffer: Buffer, extension: string, mimeType: string) {
-    return this.provider.store(buffer, extension, mimeType);
+  async store(buffer: Buffer, extension: string, mimeType: string, resourceType: 'image' | 'video' = 'image') {
+    return this.provider.store(buffer, extension, mimeType, resourceType);
   }
 
   async remove(keyOrUrl: string) {

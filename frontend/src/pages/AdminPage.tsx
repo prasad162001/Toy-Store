@@ -46,6 +46,7 @@ import {
   GET_PRODUCTS_QUERY,
   ADMIN_ORDERS_QUERY,
   UPDATE_ORDER_STATUS_MUTATION,
+  UPDATE_ORDER_MUTATION,
   UPDATE_STOCK_MUTATION,
   ADMIN_USERS_QUERY,
   ADMIN_AUDIT_LOGS_QUERY,
@@ -98,6 +99,7 @@ export const AdminPage: React.FC = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [newStatusVal, setNewStatusVal] = useState('CONFIRMED');
+  const [orderAddressId, setOrderAddressId] = useState('');
 
   // Queries
   const { data: metricsData } = useQuery({
@@ -153,6 +155,10 @@ export const AdminPage: React.FC = () => {
       setStatusDialogOpen(false);
     },
   });
+  const updateOrderMutation = useMutation({
+    mutationFn: (input: any) => getGqlClient().request(UPDATE_ORDER_MUTATION, { input }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['adminOrders'] }); queryClient.invalidateQueries({ queryKey: ['adminAuditLogs'] }); setStatusDialogOpen(false); },
+  });
 
   const deleteCouponMutation = useMutation({
     mutationFn: (id: string) => getGqlClient().request(DELETE_COUPON_MUTATION, { id }),
@@ -163,7 +169,7 @@ export const AdminPage: React.FC = () => {
     mutationFn: async () => {
       if (!token || !bannerFile) throw new Error('Select a banner image');
       const uploaded = await uploadBannerImage(bannerFile, token);
-      return getGqlClient().request(CREATE_BANNER_MUTATION, { title: bannerTitle || 'Toy Store', subtitle: bannerSubtitle || undefined, imageUrl: uploaded.url });
+      return getGqlClient().request(CREATE_BANNER_MUTATION, { title: bannerTitle || 'Toy Store', subtitle: bannerSubtitle || undefined, imageUrl: uploaded.url, mediaType: uploaded.mediaType });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['adminBanners'] }); setBannerTitle(''); setBannerSubtitle(''); setBannerFile(null); },
   });
@@ -175,6 +181,13 @@ export const AdminPage: React.FC = () => {
     mutationFn: (id: string) => getGqlClient().request(DELETE_BANNER_MUTATION, { id }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminBanners'] }),
   });
+
+  const editBannerText = (banner: any) => {
+    const title = window.prompt('Banner title', banner.title);
+    if (title === null) return;
+    const subtitle = window.prompt('Banner subtitle', banner.subtitle || '') || undefined;
+    bannerMutation.mutate({ id: banner.id, title, subtitle });
+  };
 
   const metrics = (metricsData as any)?.adminMetrics;
   const products = (productsData as any)?.products?.products || [];
@@ -390,7 +403,7 @@ export const AdminPage: React.FC = () => {
                   <TableCell sx={{ fontWeight: 800, color: '#6C5CE7' }}>₹{o.grandTotal}</TableCell>
                   <TableCell><Chip label={o.status} color="primary" size="small" /></TableCell>
                   <TableCell>
-                    <Button size="small" variant="contained" onClick={() => { setSelectedOrderId(o.id); setNewStatusVal(o.status); setStatusDialogOpen(true); }}>
+                    <Button size="small" variant="contained" onClick={() => { setSelectedOrderId(o.id); setNewStatusVal(o.status); setOrderAddressId(o.addressId || ''); setStatusDialogOpen(true); }}>
                       Update Status
                     </Button>
                   </TableCell>
@@ -494,7 +507,7 @@ export const AdminPage: React.FC = () => {
               <TextField label="Subtitle" value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} fullWidth />
               <Button component="label" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
                 {bannerFile ? bannerFile.name : 'Choose Banner Image'}
-                <input hidden type="file" accept=".jpg,.jpeg,.png" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
+                <input hidden type="file" accept=".jpg,.jpeg,.png,.heic,.heif,.mp4,.webm" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
               </Button>
               <Button variant="contained" sx={{ alignSelf: 'flex-start' }} disabled={!bannerFile || createBannerMutation.isPending} onClick={() => createBannerMutation.mutate()}>
                 {createBannerMutation.isPending ? 'Uploading...' : 'Add Banner'}
@@ -504,9 +517,9 @@ export const AdminPage: React.FC = () => {
           <TableContainer component={Paper} sx={{ borderRadius: 4, border: '1px solid #E2E0F0' }}>
             <Table><TableHead><TableRow><TableCell>Preview</TableCell><TableCell>Title</TableCell><TableCell>Order</TableCell><TableCell>Status</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>
               {banners.map((banner: any) => <TableRow key={banner.id}>
-                <TableCell><Box component="img" src={banner.imageUrl} alt={banner.title} sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} /></TableCell>
-                <TableCell>{banner.title}</TableCell><TableCell>{banner.displayOrder}</TableCell><TableCell>{banner.isActive ? 'Active' : 'Disabled'}</TableCell>
-                <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => bannerMutation.mutate({ id: banner.id, isActive: !banner.isActive })}>{banner.isActive ? 'Disable' : 'Enable'}</Button><Button size="small" color="error" onClick={() => window.confirm(`Delete banner ${banner.title}?`) && deleteBannerMutation.mutate(banner.id)}>Delete</Button></Stack></TableCell>
+                <TableCell>{banner.mediaType === 'VIDEO' ? <Box component="video" src={banner.imageUrl} muted sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} /> : <Box component="img" src={banner.imageUrl} alt={banner.title} sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} />}</TableCell>
+                <TableCell>{banner.title}</TableCell><TableCell><TextField size="small" type="number" value={banner.displayOrder} onChange={(e) => bannerMutation.mutate({ id: banner.id, displayOrder: Number(e.target.value) })} sx={{ width: 80 }} /></TableCell><TableCell>{banner.isActive ? 'Active' : 'Disabled'}</TableCell>
+                <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => editBannerText(banner)}>Edit</Button><Button size="small" onClick={() => bannerMutation.mutate({ id: banner.id, isActive: !banner.isActive })}>{banner.isActive ? 'Disable' : 'Enable'}</Button><Button size="small" color="error" onClick={() => window.confirm(`Delete banner ${banner.title}?`) && deleteBannerMutation.mutate(banner.id)}>Delete</Button></Stack></TableCell>
               </TableRow>)}
             </TableBody></Table>
             {!banners.length && <Alert sx={{ m: 2 }} severity="info">No hero banners found.</Alert>}
@@ -614,10 +627,11 @@ export const AdminPage: React.FC = () => {
               <MenuItem value="CANCELLED">CANCELLED</MenuItem>
             </Select>
           </FormControl>
+          <TextField label="Delivery Address ID" value={orderAddressId} onChange={(e) => setOrderAddressId(e.target.value)} fullWidth sx={{ mt: 2 }} helperText="Editable before packing; use an address belonging to this customer." />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => updateStatusMutation.mutate({ orderId: selectedOrderId, status: newStatusVal, notes: 'Updated from admin dashboard' })}>
+          <Button variant="contained" onClick={() => updateOrderMutation.mutate({ orderId: selectedOrderId, status: newStatusVal, addressId: orderAddressId || undefined, notes: 'Updated from admin dashboard' })}>
             Update Status
           </Button>
         </DialogActions>

@@ -19,6 +19,9 @@ export class BannerType {
   @Field()
   imageUrl: string;
 
+  @Field()
+  mediaType: string;
+
   @Field({ nullable: true })
   ctaText?: string;
 
@@ -54,11 +57,12 @@ export class BannersResolver {
   async createBanner(
     @Args('title') title: string,
     @Args('imageUrl') imageUrl: string,
+    @Args('mediaType', { nullable: true }) mediaType?: string,
     @Args('subtitle', { nullable: true }) subtitle?: string,
     @Args('ctaText', { nullable: true }) ctaText?: string,
     @Args('ctaLink', { nullable: true }) ctaLink?: string,
   ): Promise<BannerType> {
-    return this.bannersService.createBanner(title, subtitle, imageUrl, ctaText, ctaLink);
+    return this.bannersService.createBanner(title, subtitle, imageUrl, ctaText, ctaLink, mediaType || 'IMAGE');
   }
 
   @Mutation(() => Boolean)
@@ -76,12 +80,13 @@ export class BannersResolver {
     @Args('title', { nullable: true }) title?: string,
     @Args('subtitle', { nullable: true }) subtitle?: string,
     @Args('imageUrl', { nullable: true }) imageUrl?: string,
+    @Args('mediaType', { nullable: true }) mediaType?: string,
     @Args('ctaText', { nullable: true }) ctaText?: string,
     @Args('ctaLink', { nullable: true }) ctaLink?: string,
     @Args('displayOrder', { nullable: true, type: () => Int }) displayOrder?: number,
     @Args('isActive', { nullable: true }) isActive?: boolean,
   ): Promise<BannerType> {
-    return this.bannersService.updateBanner(id, { title, subtitle, imageUrl, ctaText, ctaLink, displayOrder, isActive });
+    return this.bannersService.updateBanner(id, { title, subtitle, imageUrl, mediaType, ctaText, ctaLink, displayOrder, isActive });
   }
 
   @Mutation(() => BannerType)

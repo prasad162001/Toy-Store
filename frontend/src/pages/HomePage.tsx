@@ -114,7 +114,7 @@ export const HomePage: React.FC = () => {
             overflow: 'hidden',
             position: 'relative',
             minHeight: { xs: 360, md: 460 },
-            backgroundImage: `linear-gradient(90deg, rgba(30, 30, 44, 0.85) 0%, rgba(30, 30, 44, 0.4) 100%), url(${mainBanner.imageUrl})`,
+            backgroundImage: mainBanner.mediaType === 'VIDEO' ? 'linear-gradient(90deg, rgba(30, 30, 44, 0.65) 0%, rgba(30, 30, 44, 0.35) 100%)' : `linear-gradient(90deg, rgba(30, 30, 44, 0.85) 0%, rgba(30, 30, 44, 0.4) 100%), url(${mainBanner.imageUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             display: 'flex',
@@ -125,6 +125,8 @@ export const HomePage: React.FC = () => {
             transition: 'background-image 0.7s ease-in-out',
           }}
         >
+          {mainBanner.mediaType === 'VIDEO' ? <Box component="video" src={mainBanner.imageUrl} autoPlay muted loop playsInline sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+          {mainBanner.mediaType === 'VIDEO' ? <Box sx={{ position: 'absolute', inset: 0, background: 'rgba(30, 30, 44, 0.42)' }} /> : null}
           <Box sx={{ maxWidth: 580 }}>
             <Chip
               icon={<Sparkles size={16} color="#FFEAA7" />}

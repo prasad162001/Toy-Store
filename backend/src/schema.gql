@@ -50,6 +50,7 @@ type BannerType {
   id: String!
   imageUrl: String!
   isActive: Boolean!
+  mediaType: String!
   subtitle: String
   title: String!
 }
@@ -216,7 +217,7 @@ type Mutation {
   addProductImage(displayOrder: Float, isPrimary: Boolean, productId: String!, url: String!): ProductImageType!
   addToCart(input: AddToCartInput!): CartType!
   createAddress(input: CreateAddressInput!): AddressType!
-  createBanner(ctaLink: String, ctaText: String, imageUrl: String!, subtitle: String, title: String!): BannerType!
+  createBanner(ctaLink: String, ctaText: String, imageUrl: String!, mediaType: String, subtitle: String, title: String!): BannerType!
   createCoupon(input: CreateCouponInput!): CouponType!
   createOrder(input: CreateOrderInput!): OrderType!
   createProduct(input: CreateProductInput!): ProductType!
@@ -240,9 +241,10 @@ type Mutation {
   sendOtp(input: SendOtpInput!): SimpleStatusResponse!
   syncGuestCart(sessionId: String!): CartType!
   toggleWishlistItem(productId: String!): [WishlistItemType!]!
-  updateBanner(ctaLink: String, ctaText: String, displayOrder: Int, id: String!, imageUrl: String, isActive: Boolean, subtitle: String, title: String): BannerType!
+  updateBanner(ctaLink: String, ctaText: String, displayOrder: Int, id: String!, imageUrl: String, isActive: Boolean, mediaType: String, subtitle: String, title: String): BannerType!
   updateCartItem(input: UpdateCartItemInput!, sessionId: String): CartType!
   updateCoupon(input: UpdateCouponInput!): CouponType!
+  updateOrder(input: UpdateOrderInput!): OrderType!
   updateOrderStatus(input: UpdateOrderStatusInput!): OrderType!
   updateProduct(input: UpdateProductInput!): ProductType!
   updateProductImage(displayOrder: Float, imageId: String!, isPrimary: Boolean): ProductImageType!
@@ -281,6 +283,7 @@ type OrderStatusHistoryType {
 
 type OrderType {
   address: AddressType!
+  addressId: String!
   couponCode: String
   createdAt: DateTime!
   deliveryFee: Float!
@@ -513,6 +516,13 @@ input UpdateCouponInput {
   perUserLimit: Int
   startDate: DateTime
   usageLimit: Int
+}
+
+input UpdateOrderInput {
+  addressId: String
+  notes: String
+  orderId: String!
+  status: String
 }
 
 input UpdateOrderStatusInput {

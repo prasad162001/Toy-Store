@@ -364,6 +364,27 @@ export class OrdersService {
     return updated;
   }
 
+  async updateOrder(actorId: string, input: { orderId: string; status?: string; addressId?: string; notes?: string }, actorRoles: string[] = []) {
+    const order = await this.prisma.order.findUnique({ where: { id: input.orderId }, include: { address: true } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (input.addressId && !['ORDER_PLACED', 'CONFIRMED'].includes(order.status)) {
+      throw new BadRequestException('Delivery address cannot be changed after packing');
+    }
+    if (input.addressId) {
+      const address = await this.prisma.address.findUnique({ where: { id: input.addressId } });
+      if (!address || address.userId !== order.userId) throw new BadRequestException('Address does not belong to this order customer');
+    }
+    let updated = order;
+    if (input.status) {
+      updated = await this.updateOrderStatus(actorId, { orderId: input.orderId, status: input.status, notes: input.notes }, actorRoles);
+    }
+    if (input.addressId && input.addressId !== order.addressId) {
+      updated = await this.prisma.order.update({ where: { id: input.orderId }, data: { addressId: input.addressId }, include: { address: true, items: true, statusHistory: true, payments: true, returns: true } });
+    }
+    await this.prisma.adminAuditLog.create({ data: { actorId, action: 'UPDATE_ORDER', entity: 'Order', entityId: input.orderId, metadata: JSON.stringify({ status: input.status, addressId: input.addressId, notes: input.notes }) } });
+    return updated;
+  }
+
   async requestReturn(userId: string, input: RequestReturnInput) {
     const order = await this.prisma.order.findUnique({ where: { id: input.orderId } });
     if (!order || order.userId !== userId) {
