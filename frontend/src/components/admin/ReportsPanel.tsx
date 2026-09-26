@@ -68,37 +68,49 @@ export const ReportsPanel: React.FC = () => {
 
       {tab === 0 && (
         <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <FormControl fullWidth><InputLabel>Category</InputLabel><Select value={category} label="Category" onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl>
-            <TextField fullWidth type="date" label="Start Date" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            <TextField fullWidth type="date" label="End Date" InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            <Button variant="contained" onClick={() => setSalesEnabled(true)} disabled={salesQuery.isFetching}>Generate</Button>
-          </Stack>
+          <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, background: '#FCFBFF' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2 }}>Sales Report Filters</Typography>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <FormControl fullWidth><InputLabel>Category</InputLabel><Select value={category} label="Category" onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl>
+              <TextField fullWidth type="date" label="Start Date" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <TextField fullWidth type="date" label="End Date" InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </Stack>
+            <Button variant="contained" onClick={() => setSalesEnabled(true)} disabled={salesQuery.isFetching} sx={{ mt: 2, minWidth: 170 }}>
+              {salesQuery.isFetching ? 'Generating...' : 'Generate Report'}
+            </Button>
+          </Paper>
           {sales && <>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 2 }}>
-              {Object.entries({ 'Total Orders': sales.summary.totalOrders, 'Items Sold': sales.summary.totalItemsSold, 'Gross Sales': `₹${sales.summary.grossSales.toFixed(2)}`, Discounts: `₹${sales.summary.discounts.toFixed(2)}`, 'Net Revenue': `₹${sales.summary.netRevenue.toFixed(2)}` }).map(([label, value]) => <Paper key={label} sx={{ p: 2, background: '#FAF9FF' }}><Typography variant="caption">{label}</Typography><Typography variant="h6" sx={{ fontWeight: 800 }}>{value}</Typography></Paper>)}
+              {Object.entries({ 'Total Orders': sales.summary.totalOrders, 'Items Sold': sales.summary.totalItemsSold, 'Gross Sales': `₹${sales.summary.grossSales.toFixed(2)}`, Discounts: `₹${sales.summary.discounts.toFixed(2)}`, Shipping: `₹${sales.summary.shipping.toFixed(2)}`, 'Net Revenue': `₹${sales.summary.netRevenue.toFixed(2)}` }).map(([label, value]) => <Paper key={label} sx={{ p: 2, background: '#FAF9FF' }}><Typography variant="caption">{label}</Typography><Typography variant="h6" sx={{ fontWeight: 800 }}>{value}</Typography></Paper>)}
             </Box>
-            <Button variant="outlined" startIcon={<Download size={17} />} onClick={downloadSales} sx={{ alignSelf: 'flex-start' }}>Download CSV</Button>
-            <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}><Table size="small"><TableHead><TableRow>{['Order', 'Date', 'Product', 'Category', 'Qty', 'Line Total', 'Status'].map((heading) => <TableCell key={heading}>{heading}</TableCell>)}</TableRow></TableHead><TableBody>{sales.rows.map((row: any) => <TableRow key={`${row.orderId}-${row.productName}`}><TableCell>{row.orderId}</TableCell><TableCell>{new Date(row.orderDate).toLocaleDateString()}</TableCell><TableCell>{row.productName}</TableCell><TableCell>{row.category}</TableCell><TableCell>{row.quantity}</TableCell><TableCell>₹{row.lineTotal}</TableCell><TableCell>{row.orderStatus}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
-            {!sales.rows.length && <Alert severity="info">No sales found for the selected date range.</Alert>}
+            {sales.rows.length ? <>
+              <Button variant="outlined" startIcon={<Download size={17} />} onClick={downloadSales} sx={{ alignSelf: 'flex-start' }}>Download CSV</Button>
+              <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}><Table size="small"><TableHead><TableRow>{['Order', 'Date', 'Product', 'Category', 'Qty', 'Line Total', 'Status'].map((heading) => <TableCell key={heading}>{heading}</TableCell>)}</TableRow></TableHead><TableBody>{sales.rows.map((row: any) => <TableRow key={`${row.orderId}-${row.productName}`}><TableCell>{row.orderId}</TableCell><TableCell>{new Date(row.orderDate).toLocaleDateString()}</TableCell><TableCell>{row.productName}</TableCell><TableCell>{row.category}</TableCell><TableCell>{row.quantity}</TableCell><TableCell>₹{row.lineTotal}</TableCell><TableCell>{row.orderStatus}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
+            </> : <Alert severity="info">No sales found for the selected filters.</Alert>}
           </>}
         </Stack>
       )}
 
       {tab === 1 && (
         <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <FormControl fullWidth><InputLabel>Category</InputLabel><Select value={category} label="Category" onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl>
-            <FormControl fullWidth><InputLabel>Stock Status</InputLabel><Select value={stockStatus} label="Stock Status" onChange={(e) => setStockStatus(e.target.value)}>{[['all', 'All'], ['in_stock', 'In Stock'], ['low_stock', 'Low Stock'], ['out_of_stock', 'Out of Stock']].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</Select></FormControl>
-            <Button variant="contained" onClick={() => setInventoryEnabled(true)} disabled={inventoryQuery.isFetching}>Generate</Button>
-          </Stack>
+          <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, background: '#FCFBFF' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 2 }}>Inventory Report Filters</Typography>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <FormControl fullWidth><InputLabel>Category</InputLabel><Select value={category} label="Category" onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl>
+              <FormControl fullWidth><InputLabel>Stock Status</InputLabel><Select value={stockStatus} label="Stock Status" onChange={(e) => setStockStatus(e.target.value)}>{[['all', 'All'], ['in_stock', 'In Stock'], ['low_stock', 'Low Stock'], ['out_of_stock', 'Out of Stock']].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</Select></FormControl>
+            </Stack>
+            <Button variant="contained" onClick={() => setInventoryEnabled(true)} disabled={inventoryQuery.isFetching} sx={{ mt: 2, minWidth: 170 }}>
+              {inventoryQuery.isFetching ? 'Generating...' : 'Generate Report'}
+            </Button>
+          </Paper>
           {inventory && <>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 2 }}>
               {Object.entries({ 'Total Products': inventory.summary.totalProducts, 'In Stock': inventory.summary.inStock, 'Low Stock': inventory.summary.lowStock, 'Out of Stock': inventory.summary.outOfStock, 'Inventory Value': `₹${inventory.summary.inventoryValue.toFixed(2)}` }).map(([label, value]) => <Paper key={label} sx={{ p: 2, background: '#FAF9FF' }}><Typography variant="caption">{label}</Typography><Typography variant="h6" sx={{ fontWeight: 800 }}>{value}</Typography></Paper>)}
             </Box>
-            <Button variant="outlined" startIcon={<Download size={17} />} onClick={downloadInventory} sx={{ alignSelf: 'flex-start' }}>Download CSV</Button>
-            <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}><Table size="small"><TableHead><TableRow>{['Product', 'Category', 'Stock', 'Sold', 'Status', 'Price', 'Value'].map((heading) => <TableCell key={heading}>{heading}</TableCell>)}</TableRow></TableHead><TableBody>{inventory.rows.map((row: any) => <TableRow key={row.productId}><TableCell>{row.productName}</TableCell><TableCell>{row.category}</TableCell><TableCell>{row.currentStock}</TableCell><TableCell>{row.unitsSold}</TableCell><TableCell>{row.stockStatus}</TableCell><TableCell>₹{row.price}</TableCell><TableCell>₹{row.inventoryValue}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
-            {!inventory.rows.length && <Alert severity="info">No products match the selected inventory filters.</Alert>}
+            {inventory.rows.length ? <>
+              <Button variant="outlined" startIcon={<Download size={17} />} onClick={downloadInventory} sx={{ alignSelf: 'flex-start' }}>Download CSV</Button>
+              <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto' }}><Table size="small"><TableHead><TableRow>{['Product', 'Category', 'Stock', 'Sold', 'Status', 'Price', 'Value'].map((heading) => <TableCell key={heading}>{heading}</TableCell>)}</TableRow></TableHead><TableBody>{inventory.rows.map((row: any) => <TableRow key={row.productId}><TableCell>{row.productName}</TableCell><TableCell>{row.category}</TableCell><TableCell>{row.currentStock}</TableCell><TableCell>{row.unitsSold}</TableCell><TableCell>{row.stockStatus}</TableCell><TableCell>₹{row.price}</TableCell><TableCell>₹{row.inventoryValue}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
+            </> : <Alert severity="info">No products match the selected inventory filters.</Alert>}
           </>}
         </Stack>
       )}

@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProductFilterInput, CreateProductInput, UpdateProductInput, PaginatedProductsResponse } from './dto/products.dto';
+import { ImageStorageService } from './storage.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private imageStorage: ImageStorageService) {}
 
   async getProductForAdmin(id: string) {
     const product = await this.prisma.product.findUnique({ where: { id } });
@@ -237,6 +238,9 @@ export class ProductsService {
   }
 
   async deleteProductImage(imageId: string) {
+    const image = await this.prisma.productImage.findUnique({ where: { id: imageId } });
+    if (!image) throw new NotFoundException('Product image not found');
+    await this.imageStorage.remove(image.url);
     await this.prisma.productImage.delete({ where: { id: imageId } });
     return true;
   }
