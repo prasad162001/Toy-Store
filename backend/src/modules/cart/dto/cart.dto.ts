@@ -1,5 +1,5 @@
 import { InputType, Field, ObjectType, Int, Float } from '@nestjs/graphql';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
 import { ProductType } from '../../products/dto/products.dto';
 
 @ObjectType()
@@ -53,6 +53,7 @@ export class AddToCartInput {
   @Field(() => Int, { defaultValue: 1 })
   @IsInt()
   @Min(1)
+  @Max(10)
   quantity: number;
 
   @Field({ nullable: true })
@@ -64,9 +65,13 @@ export class AddToCartInput {
 @InputType()
 export class UpdateCartItemInput {
   @Field()
+  @IsString()
   cartItemId: string;
 
   @Field(() => Int)
+  @IsInt()
+  @Min(1)
+  @Max(10)
   quantity: number;
 }
 

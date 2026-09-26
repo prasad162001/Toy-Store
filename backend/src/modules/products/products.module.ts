@@ -8,6 +8,6 @@ import { ProductAdminGuard } from './product-admin.guard';
 @Module({
   controllers: [ProductsController],
   providers: [ProductsService, ProductsResolver, ImageStorageService, ProductAdminGuard],
-  exports: [ProductsService],
+  exports: [ProductsService, ImageStorageService],
 })
 export class ProductsModule {}

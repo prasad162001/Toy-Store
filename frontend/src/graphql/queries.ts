@@ -95,6 +95,28 @@ export const GET_BANNERS_QUERY = gql`
   }
 `;
 
+export const ADMIN_BANNERS_QUERY = gql`
+  query AdminBanners {
+    adminBanners { id title subtitle imageUrl ctaText ctaLink displayOrder isActive }
+  }
+`;
+
+export const CREATE_BANNER_MUTATION = gql`
+  mutation CreateBanner($title: String!, $imageUrl: String!, $subtitle: String, $ctaText: String, $ctaLink: String) {
+    createBanner(title: $title, imageUrl: $imageUrl, subtitle: $subtitle, ctaText: $ctaText, ctaLink: $ctaLink) { id title imageUrl displayOrder isActive }
+  }
+`;
+
+export const UPDATE_BANNER_MUTATION = gql`
+  mutation UpdateBanner($id: String!, $title: String, $subtitle: String, $imageUrl: String, $ctaText: String, $ctaLink: String, $displayOrder: Int, $isActive: Boolean) {
+    updateBanner(id: $id, title: $title, subtitle: $subtitle, imageUrl: $imageUrl, ctaText: $ctaText, ctaLink: $ctaLink, displayOrder: $displayOrder, isActive: $isActive) { id title imageUrl displayOrder isActive }
+  }
+`;
+
+export const DELETE_BANNER_MUTATION = gql`
+  mutation DeleteBanner($id: String!) { deleteBanner(id: $id) }
+`;
+
 // PRODUCTS QUERIES & MUTATIONS
 export const GET_PRODUCTS_QUERY = gql`
   query GetProducts($filter: ProductFilterInput) {
@@ -111,6 +133,7 @@ export const GET_PRODUCTS_QUERY = gql`
         discountPercent
         finalPrice
         recommendedAge
+        categoryId
         isFeatured
         isNewArrival
         isBestSeller
@@ -493,6 +516,26 @@ export const UPDATE_STOCK_MUTATION = gql`
       id
       stockQuantity
     }
+  }
+`;
+
+export const ADMIN_COUPONS_QUERY = gql`
+  query AdminCoupons {
+    adminCoupons {
+      id
+      code
+      discountType
+      discountVal
+      minOrderVal
+      expiresAt
+      isActive
+    }
+  }
+`;
+
+export const DELETE_COUPON_MUTATION = gql`
+  mutation DeleteCoupon($id: String!) {
+    deleteCoupon(id: $id)
   }
 `;
 

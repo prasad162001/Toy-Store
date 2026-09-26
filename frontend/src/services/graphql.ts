@@ -30,3 +30,11 @@ export async function uploadProductImages(productId: string, files: File[], toke
   }
   return response.json();
 }
+
+export async function uploadBannerImage(file: File, token: string) {
+  const body = new FormData();
+  body.append('image', file);
+  const response = await fetch(`${apiEndpoint}/banners/images`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, body });
+  if (!response.ok) throw new Error('Banner image upload failed');
+  return response.json();
+}

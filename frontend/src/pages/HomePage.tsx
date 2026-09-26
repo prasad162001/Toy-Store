@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -29,6 +29,7 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { sessionId, toggleCartDrawer } = useCartStore();
+  const [bannerIndex, setBannerIndex] = useState(0);
 
   // Banners
   const { data: bannerData } = useQuery({
@@ -91,7 +92,13 @@ export const HomePage: React.FC = () => {
   const featuredProducts = (featuredData as any)?.products?.products || [];
   const bestSellers = (bestSellerData as any)?.products?.products || [];
 
-  const mainBanner = banners[0] || {
+  useEffect(() => {
+    if (banners.length < 2) return undefined;
+    const timer = window.setInterval(() => setBannerIndex((current) => (current + 1) % banners.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [banners.length]);
+
+  const mainBanner = banners[bannerIndex] || banners[0] || {
     title: 'Magic & Wonder for Every Childhood',
     subtitle: 'Discover safe, non-toxic, and educational toys designed to inspire young minds.',
     imageUrl: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=1600&q=80',
@@ -115,6 +122,7 @@ export const HomePage: React.FC = () => {
             p: { xs: 4, md: 8 },
             color: '#FFFFFF',
             boxShadow: '0 20px 40px rgba(108, 92, 231, 0.15)',
+            transition: 'background-image 0.7s ease-in-out',
           }}
         >
           <Box sx={{ maxWidth: 580 }}>
@@ -149,6 +157,13 @@ export const HomePage: React.FC = () => {
             </Stack>
           </Box>
         </Box>
+        {banners.length > 1 && (
+          <Stack direction="row" justifyContent="center" spacing={1} sx={{ mt: 2 }}>
+            {banners.map((banner: any, index: number) => (
+              <Box key={banner.id} component="button" aria-label={`Show banner ${index + 1}`} onClick={() => setBannerIndex(index)} sx={{ width: 9, height: 9, p: 0, border: 0, borderRadius: '50%', background: index === bannerIndex ? '#6C5CE7' : '#D6D1F5', cursor: 'pointer' }} />
+            ))}
+          </Stack>
+        )}
       </Container>
 
       {/* 3 PRIMARY CATEGORY CARDS (BOYS, GIRLS, UNISEX) */}

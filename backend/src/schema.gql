@@ -233,12 +233,14 @@ type Mutation {
   moderateReview(isApproved: Boolean!, reviewId: String!): ReviewType!
   register(input: RegisterInput!): AuthResponse!
   removeCartItem(cartItemId: String!, sessionId: String): CartType!
+  reorderBanner(displayOrder: Int!, id: String!): BannerType!
   requestReturn(input: RequestReturnInput!): ReturnType!
   resendOtp(input: SendOtpInput!): SimpleStatusResponse!
   resetPin(input: ResetPinInput!): SimpleStatusResponse!
   sendOtp(input: SendOtpInput!): SimpleStatusResponse!
   syncGuestCart(sessionId: String!): CartType!
   toggleWishlistItem(productId: String!): [WishlistItemType!]!
+  updateBanner(ctaLink: String, ctaText: String, displayOrder: Int, id: String!, imageUrl: String, isActive: Boolean, subtitle: String, title: String): BannerType!
   updateCartItem(input: UpdateCartItemInput!, sessionId: String): CartType!
   updateCoupon(input: UpdateCouponInput!): CouponType!
   updateOrderStatus(input: UpdateOrderStatusInput!): OrderType!

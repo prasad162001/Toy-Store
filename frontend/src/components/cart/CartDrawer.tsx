@@ -151,6 +151,7 @@ export const CartDrawer: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => updateMutation.mutate({ cartItemId: item.id, quantity: item.quantity + 1 })}
+                          disabled={item.quantity >= 10 || item.quantity >= (item.product?.inventory?.stockQuantity || 0)}
                         >
                           <Plus size={14} />
                         </IconButton>

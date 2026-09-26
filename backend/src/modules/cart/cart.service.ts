@@ -88,6 +88,9 @@ export class CartService {
   }
 
   async addToCart(input: AddToCartInput, userId?: string): Promise<CartType> {
+    if (input.quantity < 1 || input.quantity > 10) {
+      throw new BadRequestException('Cart quantity must be between 1 and 10');
+    }
     const product = await this.prisma.product.findUnique({
       where: { id: input.productId },
       include: { inventory: true },
@@ -117,6 +120,9 @@ export class CartService {
     });
 
     const newQuantity = (existingItem?.quantity || 0) + input.quantity;
+    if (newQuantity > 10) {
+      throw new BadRequestException('You can add a maximum of 10 units of a product');
+    }
     if (availableStock < newQuantity) {
       throw new BadRequestException(`Cannot add more than available stock (${availableStock})`);
     }
@@ -140,6 +146,9 @@ export class CartService {
   }
 
   async updateCartItem(input: UpdateCartItemInput, userId?: string, sessionId?: string): Promise<CartType> {
+    if (input.quantity < 1 || input.quantity > 10) {
+      throw new BadRequestException('Cart quantity must be between 1 and 10');
+    }
     const cartItem = await this.prisma.cartItem.findUnique({
       where: { id: input.cartItemId },
       include: { product: { include: { inventory: true } } },
@@ -149,19 +158,15 @@ export class CartService {
       throw new NotFoundException('Cart item not found');
     }
 
-    if (input.quantity <= 0) {
-      await this.prisma.cartItem.delete({ where: { id: input.cartItemId } });
-    } else {
-      const stock = cartItem.product.inventory?.stockQuantity || 0;
-      if (stock < input.quantity) {
-        throw new BadRequestException(`Only ${stock} items available in stock`);
-      }
-
-      await this.prisma.cartItem.update({
-        where: { id: input.cartItemId },
-        data: { quantity: input.quantity },
-      });
+    const stock = cartItem.product.inventory?.stockQuantity || 0;
+    if (stock < input.quantity) {
+      throw new BadRequestException(`Only ${stock} items available in stock`);
     }
+
+    await this.prisma.cartItem.update({
+      where: { id: input.cartItemId },
+      data: { quantity: input.quantity },
+    });
 
     return this.getCart(userId, sessionId);
   }

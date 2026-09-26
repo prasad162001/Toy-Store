@@ -1,5 +1,5 @@
 import { InputType, Field, ObjectType, Int, Float } from '@nestjs/graphql';
-import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, Max } from 'class-validator';
 
 @ObjectType()
 export class CategoryType {
@@ -124,39 +124,68 @@ export class PaginatedProductsResponse {
 @InputType()
 export class ProductFilterInput {
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   categorySlug?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   search?: string;
 
   @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   minPrice?: number;
 
   @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   maxPrice?: number;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   ageRange?: string;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   inStockOnly?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isFeatured?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isNewArrival?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
   isBestSeller?: boolean;
 
   @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   sortBy?: string; // 'price_asc', 'price_desc', 'newest', 'rating', 'popular'
 
   @Field(() => Int, { nullable: true, defaultValue: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
   page?: number;
 
   @Field(() => Int, { nullable: true, defaultValue: 12 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
   limit?: number;
 }
 
@@ -183,6 +212,7 @@ export class CreateProductInput {
   @Field(() => Float, { defaultValue: 0 })
   @IsNumber()
   @Min(0)
+  @Max(100)
   discountPercent?: number;
 
   @Field()
@@ -248,6 +278,7 @@ export class UpdateProductInput {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(100)
   discountPercent?: number;
 
   @Field({ nullable: true })

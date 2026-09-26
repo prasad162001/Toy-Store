@@ -38,7 +38,7 @@ export const AccountPage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { sessionId, toggleCartDrawer } = useCartStore();
 
-  const initialTab = searchParams.get('tab') === 'wishlist' ? 1 : searchParams.get('tab') === 'addresses' ? 2 : 0;
+  const initialTab = searchParams.get('tab') === 'wishlist' ? 1 : searchParams.get('tab') === 'addresses' ? 2 : searchParams.get('tab') === 'profile' ? 3 : 0;
   const [tabIndex, setTabIndex] = useState(initialTab);
 
   const orderSuccessNumber = searchParams.get('orderSuccess');
@@ -118,9 +118,10 @@ export const AccountPage: React.FC = () => {
             </Box>
             <Divider sx={{ mb: 2 }} />
             <Tabs orientation="vertical" value={tabIndex} onChange={(_, val) => setTabIndex(val)} sx={{ '& .MuiTab-root': { alignItems: 'flex-start', fontWeight: 700 } }}>
-              <Tab icon={<Package size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="My Orders" />
+              <Tab icon={<Package size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Orders" />
               <Tab icon={<Heart size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="My Wishlist" />
               <Tab icon={<MapPin size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Saved Addresses" />
+              <Tab icon={<User size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Profile" />
             </Tabs>
             <Divider sx={{ my: 2 }} />
             <Button color="error" fullWidth startIcon={<LogOut size={18} />} onClick={() => { logout(); navigate('/'); }}>
@@ -226,6 +227,17 @@ export const AccountPage: React.FC = () => {
                 ))}
               </Grid>
             </Box>
+          )}
+
+          {tabIndex === 3 && (
+            <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid #E2E0F0' }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>Profile</Typography>
+              <Stack spacing={1}>
+                <Typography><strong>Account Name:</strong> {user?.accountName}</Typography>
+                <Typography><strong>Mobile:</strong> +91 {user?.mobile}</Typography>
+                <Typography><strong>Email:</strong> {user?.email || 'Not provided'}</Typography>
+              </Stack>
+            </Paper>
           )}
         </Grid>
       </Grid>

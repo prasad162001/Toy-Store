@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -45,6 +45,10 @@ export const ProductsPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  useEffect(() => {
+    setPage(1);
+  }, [categorySlug, search, priceRange[0], priceRange[1], selectedAge, inStockOnly, sortBy]);
+
   // Fetch Products with filters
   const { data, isLoading } = useQuery({
     queryKey: ['products', categorySlug, search, priceRange, selectedAge, inStockOnly, sortBy, page],
@@ -62,6 +66,7 @@ export const ProductsPage: React.FC = () => {
           limit: 12,
         },
       }),
+    placeholderData: (previousData) => previousData,
   });
 
   const addToCartMutation = useMutation({
@@ -129,7 +134,7 @@ export const ProductsPage: React.FC = () => {
         <Box sx={{ width: '100%', minWidth: 0, px: 1, boxSizing: 'border-box' }}>
           <Slider
             value={priceRange}
-            onChange={(_, val) => setPriceRange(val as number[])}
+            onChange={(_, val) => { setPage(1); setPriceRange(val as number[]); }}
             valueLabelDisplay="auto"
             min={0}
             max={10000}

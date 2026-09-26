@@ -28,4 +28,12 @@ export class BannersService {
     await this.prisma.banner.delete({ where: { id } });
     return true;
   }
+
+  async updateBanner(id: string, data: { title?: string; subtitle?: string; imageUrl?: string; ctaText?: string; ctaLink?: string; displayOrder?: number; isActive?: boolean }) {
+    return this.prisma.banner.update({ where: { id }, data });
+  }
+
+  async reorderBanner(id: string, displayOrder: number) {
+    return this.updateBanner(id, { displayOrder });
+  }
 }

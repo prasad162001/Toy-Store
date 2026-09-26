@@ -67,4 +67,27 @@ export class BannersResolver {
   async deleteBanner(@Args('id') id: string): Promise<boolean> {
     return this.bannersService.deleteBanner(id);
   }
+
+  @Mutation(() => BannerType)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  async updateBanner(
+    @Args('id') id: string,
+    @Args('title', { nullable: true }) title?: string,
+    @Args('subtitle', { nullable: true }) subtitle?: string,
+    @Args('imageUrl', { nullable: true }) imageUrl?: string,
+    @Args('ctaText', { nullable: true }) ctaText?: string,
+    @Args('ctaLink', { nullable: true }) ctaLink?: string,
+    @Args('displayOrder', { nullable: true, type: () => Int }) displayOrder?: number,
+    @Args('isActive', { nullable: true }) isActive?: boolean,
+  ): Promise<BannerType> {
+    return this.bannersService.updateBanner(id, { title, subtitle, imageUrl, ctaText, ctaLink, displayOrder, isActive });
+  }
+
+  @Mutation(() => BannerType)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  async reorderBanner(@Args('id') id: string, @Args('displayOrder', { type: () => Int }) displayOrder: number): Promise<BannerType> {
+    return this.bannersService.reorderBanner(id, displayOrder);
+  }
 }

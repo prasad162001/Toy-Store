@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box,
   Container,
@@ -53,8 +53,14 @@ import {
   CREATE_PRODUCT_MUTATION,
   UPDATE_PRODUCT_MUTATION,
   DELETE_PRODUCT_IMAGE_MUTATION,
+  ADMIN_COUPONS_QUERY,
+  DELETE_COUPON_MUTATION,
+  ADMIN_BANNERS_QUERY,
+  CREATE_BANNER_MUTATION,
+  UPDATE_BANNER_MUTATION,
+  DELETE_BANNER_MUTATION,
 } from '../graphql/queries';
-import { uploadProductImages } from '../services/graphql';
+import { uploadBannerImage, uploadProductImages } from '../services/graphql';
 import { ReportsPanel } from '../components/admin/ReportsPanel';
 
 export const AdminPage: React.FC = () => {
@@ -65,6 +71,9 @@ export const AdminPage: React.FC = () => {
   const canManageUsers = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
   const canManageProducts = canManageUsers;
   const [activeTab, setActiveTab] = useState(0);
+  const reportsRef = useRef<HTMLDivElement>(null);
+
+  const openReports = () => reportsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [productDialogMode, setProductDialogMode] = useState<'create' | 'edit'>('create');
@@ -73,8 +82,12 @@ export const AdminPage: React.FC = () => {
     recommendedAge: '', categoryId: '', initialStock: 10, imageUrls: '', isFeatured: false,
     isNewArrival: false, isBestSeller: false, isActive: true,
   });
+  const [originalProductForm, setOriginalProductForm] = useState<any>(productForm);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerSubtitle, setBannerSubtitle] = useState('');
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
 
   // Stock dialog state
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -109,6 +122,16 @@ export const AdminPage: React.FC = () => {
     queryFn: () => getGqlClient().request(ADMIN_AUDIT_LOGS_QUERY),
     enabled: roles.includes('SUPER_ADMIN') || roles.includes('ADMIN'),
   });
+  const { data: couponsData } = useQuery({
+    queryKey: ['adminCoupons'],
+    queryFn: () => getGqlClient().request(ADMIN_COUPONS_QUERY),
+    enabled: canManageUsers,
+  });
+  const { data: bannersData } = useQuery({
+    queryKey: ['adminBanners'],
+    queryFn: () => getGqlClient().request(ADMIN_BANNERS_QUERY),
+    enabled: canManageUsers,
+  });
 
   // Mutations
   const updateStockMutation = useMutation({
@@ -131,11 +154,35 @@ export const AdminPage: React.FC = () => {
     },
   });
 
+  const deleteCouponMutation = useMutation({
+    mutationFn: (id: string) => getGqlClient().request(DELETE_COUPON_MUTATION, { id }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminCoupons'] }),
+  });
+
+  const createBannerMutation = useMutation({
+    mutationFn: async () => {
+      if (!token || !bannerFile) throw new Error('Select a banner image');
+      const uploaded = await uploadBannerImage(bannerFile, token);
+      return getGqlClient().request(CREATE_BANNER_MUTATION, { title: bannerTitle || 'Toy Store', subtitle: bannerSubtitle || undefined, imageUrl: uploaded.url });
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['adminBanners'] }); setBannerTitle(''); setBannerSubtitle(''); setBannerFile(null); },
+  });
+  const bannerMutation = useMutation({
+    mutationFn: (variables: any) => getGqlClient().request(UPDATE_BANNER_MUTATION, variables),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminBanners'] }),
+  });
+  const deleteBannerMutation = useMutation({
+    mutationFn: (id: string) => getGqlClient().request(DELETE_BANNER_MUTATION, { id }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminBanners'] }),
+  });
+
   const metrics = (metricsData as any)?.adminMetrics;
   const products = (productsData as any)?.products?.products || [];
   const orders = (ordersData as any)?.adminOrders || [];
   const users = (usersData as any)?.adminUsers || [];
   const auditLogs = (auditData as any)?.adminAuditLogs || [];
+  const coupons = (couponsData as any)?.adminCoupons || [];
+  const banners = (bannersData as any)?.adminBanners || [];
   const categories = (categoriesData as any)?.categories || [];
 
   const productMutation = useMutation({
@@ -156,7 +203,9 @@ export const AdminPage: React.FC = () => {
 
   const openCreateProduct = () => {
     setProductDialogMode('create');
-    setProductForm({ id: '', name: '', description: '', specifications: '', price: 0, discountPercent: 0, recommendedAge: '', categoryId: categories[0]?.id || '', initialStock: 10, imageUrls: '', isFeatured: false, isNewArrival: false, isBestSeller: false, isActive: true });
+    const nextForm = { id: '', name: '', description: '', specifications: '', price: 0, discountPercent: 0, recommendedAge: '', categoryId: categories[0]?.id || '', initialStock: 10, imageUrls: '', isFeatured: false, isNewArrival: false, isBestSeller: false, isActive: true };
+    setProductForm(nextForm);
+    setOriginalProductForm(nextForm);
     setProductDialogOpen(true);
     setSelectedImageFiles([]);
     setRemovedImageIds([]);
@@ -164,7 +213,9 @@ export const AdminPage: React.FC = () => {
 
   const openEditProduct = (product: any) => {
     setProductDialogMode('edit');
-    setProductForm({ ...product, imageUrls: product.images?.map((image: any) => image.url).join(', ') || '' });
+    const nextForm = { ...product, imageUrls: product.images?.map((image: any) => image.url).join(', ') || '' };
+    setProductForm(nextForm);
+    setOriginalProductForm(nextForm);
     setProductDialogOpen(true);
     setSelectedImageFiles([]);
     setRemovedImageIds([]);
@@ -191,6 +242,13 @@ export const AdminPage: React.FC = () => {
     event.target.value = '';
   };
 
+  const productFormValid = Boolean(
+    productForm.name && productForm.description && productForm.recommendedAge && productForm.categoryId &&
+    Number.isFinite(Number(productForm.price)) && Number(productForm.price) >= 0 &&
+    Number.isFinite(Number(productForm.discountPercent)) && Number(productForm.discountPercent) >= 0 && Number(productForm.discountPercent) <= 100,
+  );
+  const productFormChanged = productDialogMode === 'create' || JSON.stringify(productForm) !== JSON.stringify(originalProductForm) || selectedImageFiles.length > 0 || removedImageIds.length > 0;
+
   return (
     <Container maxWidth="xl" sx={{ pt: 4, pb: 10 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -212,6 +270,8 @@ export const AdminPage: React.FC = () => {
           <Tab icon={<ShoppingBag size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Order Fulfillment" />
           <Tab icon={<Users size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Customer Accounts" />
           <Tab icon={<FileText size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Audit Trail Logs" />
+          {canManageUsers && <Tab icon={<FileText size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Coupons" />}
+          {canManageUsers && <Tab icon={<ImageIcon size={18} style={{ marginRight: 8 }} />} iconPosition="start" label="Hero Banners" />}
         </Tabs>
       </Paper>
 
@@ -225,25 +285,25 @@ export const AdminPage: React.FC = () => {
         <Stack spacing={4}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 3, borderRadius: 4, background: 'linear-gradient(135deg, #6C5CE7 0%, #4834D4 100%)', color: '#FFFFFF' }}>
+              <Paper onClick={openReports} sx={{ p: 3, borderRadius: 4, cursor: 'pointer', background: 'linear-gradient(135deg, #6C5CE7 0%, #4834D4 100%)', color: '#FFFFFF' }}>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Revenue</Typography>
                 <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>₹{metrics?.totalRevenue?.toFixed(0) || 0}</Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 3, borderRadius: 4, background: 'linear-gradient(135deg, #FF7675 0%, #D63031 100%)', color: '#FFFFFF' }}>
+              <Paper onClick={() => setActiveTab(3)} sx={{ p: 3, borderRadius: 4, cursor: 'pointer', background: 'linear-gradient(135deg, #FF7675 0%, #D63031 100%)', color: '#FFFFFF' }}>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Orders</Typography>
                 <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{metrics?.totalOrders || 0}</Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 3, borderRadius: 4, background: 'linear-gradient(135deg, #00B894 0%, #009473 100%)', color: '#FFFFFF' }}>
+              <Paper onClick={() => setActiveTab(1)} sx={{ p: 3, borderRadius: 4, cursor: 'pointer', background: 'linear-gradient(135deg, #00B894 0%, #009473 100%)', color: '#FFFFFF' }}>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>Active Products</Typography>
                 <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{metrics?.totalProducts || 0}</Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 3, borderRadius: 4, background: 'linear-gradient(135deg, #FDCB6E 0%, #E17055 100%)', color: '#FFFFFF' }}>
+              <Paper onClick={() => setActiveTab(4)} sx={{ p: 3, borderRadius: 4, cursor: 'pointer', background: 'linear-gradient(135deg, #FDCB6E 0%, #E17055 100%)', color: '#FFFFFF' }}>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>Registered Users</Typography>
                 <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{metrics?.totalUsers || 0}</Typography>
               </Paper>
@@ -306,8 +366,6 @@ export const AdminPage: React.FC = () => {
           </Table>
         </TableContainer>
       )}
-
-      {canManageUsers && <ReportsPanel />}
 
       {/* TAB 3: ORDER FULFILLMENT */}
       {activeTab === 3 && (
@@ -405,6 +463,59 @@ export const AdminPage: React.FC = () => {
         )
       )}
 
+      {activeTab === 6 && canManageUsers && (
+        <TableContainer component={Paper} sx={{ borderRadius: 4, border: '1px solid #E2E0F0' }}>
+          <Table>
+            <TableHead sx={{ background: '#FAF9FF' }}>
+              <TableRow><TableCell>Code</TableCell><TableCell>Discount</TableCell><TableCell>Minimum Order</TableCell><TableCell>Expires</TableCell><TableCell>Action</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {coupons.map((coupon: any) => (
+                <TableRow key={coupon.id}>
+                  <TableCell sx={{ fontWeight: 700 }}>{coupon.code}</TableCell>
+                  <TableCell>{coupon.discountType === 'PERCENTAGE' ? `${coupon.discountVal}%` : `₹${coupon.discountVal}`}</TableCell>
+                  <TableCell>₹{coupon.minOrderVal}</TableCell>
+                  <TableCell>{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString() : 'No expiry'}</TableCell>
+                  <TableCell><Button color="error" size="small" onClick={() => window.confirm(`Delete coupon ${coupon.code}?`) && deleteCouponMutation.mutate(coupon.id)}>Delete</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {!coupons.length && <Alert sx={{ m: 2 }} severity="info">No coupons found.</Alert>}
+        </TableContainer>
+      )}
+
+      {activeTab === 7 && canManageUsers && (
+        <Stack spacing={3}>
+          <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #E2E0F0' }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Add Hero Banner</Typography>
+            <Stack spacing={2}>
+              <TextField label="Title" value={bannerTitle} onChange={(e) => setBannerTitle(e.target.value)} fullWidth />
+              <TextField label="Subtitle" value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} fullWidth />
+              <Button component="label" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
+                {bannerFile ? bannerFile.name : 'Choose Banner Image'}
+                <input hidden type="file" accept=".jpg,.jpeg,.png" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
+              </Button>
+              <Button variant="contained" sx={{ alignSelf: 'flex-start' }} disabled={!bannerFile || createBannerMutation.isPending} onClick={() => createBannerMutation.mutate()}>
+                {createBannerMutation.isPending ? 'Uploading...' : 'Add Banner'}
+              </Button>
+            </Stack>
+          </Paper>
+          <TableContainer component={Paper} sx={{ borderRadius: 4, border: '1px solid #E2E0F0' }}>
+            <Table><TableHead><TableRow><TableCell>Preview</TableCell><TableCell>Title</TableCell><TableCell>Order</TableCell><TableCell>Status</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>
+              {banners.map((banner: any) => <TableRow key={banner.id}>
+                <TableCell><Box component="img" src={banner.imageUrl} alt={banner.title} sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} /></TableCell>
+                <TableCell>{banner.title}</TableCell><TableCell>{banner.displayOrder}</TableCell><TableCell>{banner.isActive ? 'Active' : 'Disabled'}</TableCell>
+                <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => bannerMutation.mutate({ id: banner.id, isActive: !banner.isActive })}>{banner.isActive ? 'Disable' : 'Enable'}</Button><Button size="small" color="error" onClick={() => window.confirm(`Delete banner ${banner.title}?`) && deleteBannerMutation.mutate(banner.id)}>Delete</Button></Stack></TableCell>
+              </TableRow>)}
+            </TableBody></Table>
+            {!banners.length && <Alert sx={{ m: 2 }} severity="info">No hero banners found.</Alert>}
+          </TableContainer>
+        </Stack>
+      )}
+
+      {canManageUsers && <Box ref={reportsRef} sx={{ mt: 5, scrollMarginTop: 96 }}><ReportsPanel /></Box>}
+
       {/* Stock Dialog */}
       <Dialog open={productDialogOpen} onClose={() => setProductDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{productDialogMode === 'create' ? 'Add Product' : 'Edit Product'}</DialogTitle>
@@ -414,8 +525,8 @@ export const AdminPage: React.FC = () => {
             <TextField label="Description" value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} multiline minRows={2} fullWidth />
             <TextField label="Specifications" value={productForm.specifications} onChange={(e) => setProductForm({ ...productForm, specifications: e.target.value })} fullWidth />
             <Stack direction="row" spacing={2}>
-              <TextField label="Price" type="number" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })} fullWidth />
-              <TextField label="Discount %" type="number" value={productForm.discountPercent} onChange={(e) => setProductForm({ ...productForm, discountPercent: Number(e.target.value) })} fullWidth />
+              <TextField label="Price" type="number" inputProps={{ min: 0, step: 0.01 }} value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })} fullWidth />
+              <TextField label="Discount %" type="number" inputProps={{ min: 0, max: 100, step: 0.1 }} value={productForm.discountPercent} onChange={(e) => setProductForm({ ...productForm, discountPercent: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} fullWidth />
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField label="Recommended Age" value={productForm.recommendedAge} onChange={(e) => setProductForm({ ...productForm, recommendedAge: e.target.value })} fullWidth />
@@ -461,7 +572,7 @@ export const AdminPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setProductDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleProductSave} disabled={productMutation.isPending || !productForm.name || !productForm.categoryId}>
+          <Button variant="contained" onClick={handleProductSave} disabled={productMutation.isPending || !productFormValid || !productFormChanged}>
             {productMutation.isPending ? 'Saving...' : 'Save Product'}
           </Button>
         </DialogActions>
