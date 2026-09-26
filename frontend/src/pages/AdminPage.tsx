@@ -52,11 +52,14 @@ import {
   GET_CATEGORIES_QUERY,
   CREATE_PRODUCT_MUTATION,
   UPDATE_PRODUCT_MUTATION,
+  DELETE_PRODUCT_IMAGE_MUTATION,
 } from '../graphql/queries';
+import { uploadProductImages } from '../services/graphql';
+import { ReportsPanel } from '../components/admin/ReportsPanel';
 
 export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const roles = user?.roles || [];
   const isStaffOnly = roles.includes('STAFF') && !roles.includes('ADMIN') && !roles.includes('SUPER_ADMIN');
   const canManageUsers = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
@@ -70,6 +73,8 @@ export const AdminPage: React.FC = () => {
     recommendedAge: '', categoryId: '', initialStock: 10, imageUrls: '', isFeatured: false,
     isNewArrival: false, isBestSeller: false, isActive: true,
   });
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
 
   // Stock dialog state
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -135,10 +140,17 @@ export const AdminPage: React.FC = () => {
 
   const productMutation = useMutation({
     mutationFn: (vars: any) => getGqlClient().request(productDialogMode === 'create' ? CREATE_PRODUCT_MUTATION : UPDATE_PRODUCT_MUTATION, { input: vars }),
-    onSuccess: () => {
+    onSuccess: async (response: any) => {
+      const productId = response?.createProduct?.id || response?.updateProduct?.id;
+      if (productId && token) {
+        await Promise.all(removedImageIds.map((imageId) => getGqlClient().request(DELETE_PRODUCT_IMAGE_MUTATION, { imageId })));
+        if (selectedImageFiles.length > 0) await uploadProductImages(productId, selectedImageFiles, token);
+      }
       queryClient.invalidateQueries({ queryKey: ['adminProducts'] });
       queryClient.invalidateQueries({ queryKey: ['adminMetrics'] });
       setProductDialogOpen(false);
+      setSelectedImageFiles([]);
+      setRemovedImageIds([]);
     },
   });
 
@@ -146,24 +158,37 @@ export const AdminPage: React.FC = () => {
     setProductDialogMode('create');
     setProductForm({ id: '', name: '', description: '', specifications: '', price: 0, discountPercent: 0, recommendedAge: '', categoryId: categories[0]?.id || '', initialStock: 10, imageUrls: '', isFeatured: false, isNewArrival: false, isBestSeller: false, isActive: true });
     setProductDialogOpen(true);
+    setSelectedImageFiles([]);
+    setRemovedImageIds([]);
   };
 
   const openEditProduct = (product: any) => {
     setProductDialogMode('edit');
     setProductForm({ ...product, imageUrls: product.images?.map((image: any) => image.url).join(', ') || '' });
     setProductDialogOpen(true);
+    setSelectedImageFiles([]);
+    setRemovedImageIds([]);
   };
 
   const handleProductSave = () => {
     if (productDialogMode === 'create') {
+      const { name, description, specifications, price, discountPercent, recommendedAge, categoryId, initialStock, isFeatured, isNewArrival, isBestSeller } = productForm;
       productMutation.mutate({
-        ...productForm,
-        imageUrls: productForm.imageUrls.split(',').map((url: string) => url.trim()).filter(Boolean),
+        name, description, specifications, price, discountPercent, recommendedAge, categoryId, initialStock, isFeatured, isNewArrival, isBestSeller,
+        imageUrls: [],
       });
     } else {
-      const { imageUrls, initialStock, ...updateInput } = productForm;
-      productMutation.mutate(updateInput);
+      const { id, name, description, specifications, price, discountPercent, recommendedAge, categoryId, isFeatured, isNewArrival, isBestSeller, isActive } = productForm;
+      productMutation.mutate({ id, name, description, specifications, price, discountPercent, recommendedAge, categoryId, isFeatured, isNewArrival, isBestSeller, isActive });
     }
+  };
+
+  const handleImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/heif']);
+    const valid = files.filter((file) => allowed.has(file.type) && file.size <= 10 * 1024 * 1024);
+    setSelectedImageFiles((current) => [...current, ...valid].slice(0, 10));
+    event.target.value = '';
   };
 
   return (
@@ -281,6 +306,8 @@ export const AdminPage: React.FC = () => {
           </Table>
         </TableContainer>
       )}
+
+      {canManageUsers && <ReportsPanel />}
 
       {/* TAB 3: ORDER FULFILLMENT */}
       {activeTab === 3 && (
@@ -400,7 +427,28 @@ export const AdminPage: React.FC = () => {
               </FormControl>
             </Stack>
             {productDialogMode === 'create' && <TextField label="Initial Stock" type="number" value={productForm.initialStock} onChange={(e) => setProductForm({ ...productForm, initialStock: Number(e.target.value) })} fullWidth />}
-            {productDialogMode === 'create' && <TextField label="Image URLs (comma separated)" value={productForm.imageUrls} onChange={(e) => setProductForm({ ...productForm, imageUrls: e.target.value })} fullWidth />}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>Product Images</Typography>
+              <Button component="label" variant="outlined" startIcon={<ImageIcon size={18} />}>
+                Upload Images
+                <input hidden multiple type="file" accept=".jpg,.jpeg,.png,.heic,.heif,image/jpeg,image/png,image/heic,image/heif" onChange={handleImageSelection} />
+              </Button>
+              <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 2 }}>
+                {(productForm.images || []).filter((image: any) => !removedImageIds.includes(image.id)).map((image: any) => (
+                  <Box key={image.id} sx={{ position: 'relative' }}>
+                    <Box component="img" src={image.url} alt="Existing product" sx={{ width: 92, height: 72, objectFit: 'cover', borderRadius: 2 }} />
+                    <Button size="small" color="error" onClick={() => setRemovedImageIds((current) => [...current, image.id])}>Remove</Button>
+                  </Box>
+                ))}
+                {selectedImageFiles.map((file, index) => (
+                  <Box key={`${file.name}-${index}`} sx={{ position: 'relative' }}>
+                    {file.type.startsWith('image/') && !file.type.includes('heic') && !file.type.includes('heif') ? <Box component="img" src={URL.createObjectURL(file)} alt={file.name} sx={{ width: 92, height: 72, objectFit: 'cover', borderRadius: 2 }} /> : <Box sx={{ width: 92, height: 72, p: 1, borderRadius: 2, background: '#F4F3FB', fontSize: 11 }}>{file.name}</Box>}
+                    <Button size="small" color="error" onClick={() => setSelectedImageFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}>Remove</Button>
+                  </Box>
+                ))}
+              </Stack>
+              <Typography variant="caption" color="text.secondary">JPG, JPEG, PNG, HEIC or HEIF, up to 10 MB each.</Typography>
+            </Box>
             <Stack direction="row" spacing={2} flexWrap="wrap">
               {['isFeatured', 'isNewArrival', 'isBestSeller'].map((field) => (
                 <Button key={field} variant={productForm[field] ? 'contained' : 'outlined'} onClick={() => setProductForm({ ...productForm, [field]: !productForm[field] })}>

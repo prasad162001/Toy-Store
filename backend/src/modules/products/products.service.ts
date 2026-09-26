@@ -6,6 +6,12 @@ import { ProductFilterInput, CreateProductInput, UpdateProductInput, PaginatedPr
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  async getProductForAdmin(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+
   async getProducts(filter?: ProductFilterInput): Promise<PaginatedProductsResponse> {
     const page = filter?.page || 1;
     const limit = filter?.limit || 12;
@@ -133,7 +139,7 @@ export class ProductsService {
         isNewArrival: input.isNewArrival || false,
         isBestSeller: input.isBestSeller || false,
         images: {
-          create: input.imageUrls.map((url, idx) => ({
+          create: (input.imageUrls || []).map((url, idx) => ({
             url,
             isPrimary: idx === 0,
             displayOrder: idx,

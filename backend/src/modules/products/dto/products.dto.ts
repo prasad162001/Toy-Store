@@ -199,9 +199,10 @@ export class CreateProductInput {
   initialStock?: number;
 
   @Field(() => [String])
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  imageUrls: string[];
+  imageUrls?: string[];
 
   @Field({ defaultValue: false })
   @IsBoolean()

@@ -170,6 +170,37 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type InventoryReport {
+  category: String!
+  rows: [InventoryReportRow!]!
+  summary: InventoryReportSummary!
+  title: String!
+}
+
+input InventoryReportInput {
+  category: String! = "all"
+  stockStatus: String! = "all"
+}
+
+type InventoryReportRow {
+  category: String!
+  currentStock: Int!
+  inventoryValue: Float!
+  price: Float!
+  productId: String!
+  productName: String!
+  stockStatus: String!
+  unitsSold: Int!
+}
+
+type InventoryReportSummary {
+  inStock: Int!
+  inventoryValue: Float!
+  lowStock: Int!
+  outOfStock: Int!
+  totalProducts: Int!
+}
+
 type InventoryType {
   id: String!
   lowStockThreshold: Float!
@@ -203,6 +234,7 @@ type Mutation {
   register(input: RegisterInput!): AuthResponse!
   removeCartItem(cartItemId: String!, sessionId: String): CartType!
   requestReturn(input: RequestReturnInput!): ReturnType!
+  resendOtp(input: SendOtpInput!): SimpleStatusResponse!
   resetPin(input: ResetPinInput!): SimpleStatusResponse!
   sendOtp(input: SendOtpInput!): SimpleStatusResponse!
   syncGuestCart(sessionId: String!): CartType!
@@ -350,6 +382,7 @@ type Query {
   cart(sessionId: String): CartType!
   categories: [CategoryType!]!
   category(slug: String!): CategoryType
+  inventoryReport(filters: InventoryReportInput): InventoryReport!
   me: UserType!
   myAddresses: [AddressType!]!
   myNotifications: [NotificationType!]!
@@ -361,6 +394,7 @@ type Query {
   productReviews(productId: String!): [ReviewType!]!
   products(filter: ProductFilterInput): PaginatedProductsResponse!
   promotions: [PromotionType!]!
+  salesReport(filters: SalesReportInput): SalesReport!
   unreadNotificationCount: Int!
   validateCoupon(code: String!, subtotal: Float!): CouponValidationResponse!
 }
@@ -370,6 +404,7 @@ input RegisterInput {
   mobile: String!
   otp: String!
   pin: String!
+  verificationToken: String
 }
 
 input RequestReturnInput {
@@ -382,6 +417,7 @@ input ResetPinInput {
   mobile: String!
   newPin: String!
   otp: String!
+  verificationToken: String
 }
 
 type ReturnType {
@@ -406,6 +442,44 @@ type ReviewType {
   user: UserType
 }
 
+type SalesReport {
+  category: String!
+  dateRange: String!
+  rows: [SalesReportRow!]!
+  summary: SalesReportSummary!
+  title: String!
+}
+
+input SalesReportInput {
+  category: String! = "all"
+  endDate: String
+  startDate: String
+}
+
+type SalesReportRow {
+  category: String!
+  discount: Float!
+  lineTotal: Float!
+  orderDate: DateTime!
+  orderId: String!
+  orderStatus: String!
+  orderTotal: Float!
+  paymentStatus: String!
+  productName: String!
+  quantity: Int!
+  unitPrice: Float!
+}
+
+type SalesReportSummary {
+  discounts: Float!
+  grossSales: Float!
+  netRevenue: Float!
+  refunds: Float!
+  shipping: Float!
+  totalItemsSold: Int!
+  totalOrders: Int!
+}
+
 input SendOtpInput {
   mobile: String!
 }
@@ -413,6 +487,7 @@ input SendOtpInput {
 type SimpleStatusResponse {
   message: String!
   success: Boolean!
+  verificationToken: String
 }
 
 type Subscription {

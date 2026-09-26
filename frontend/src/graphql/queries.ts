@@ -428,6 +428,32 @@ export const UPDATE_PRODUCT_MUTATION = gql`
   }
 `;
 
+export const DELETE_PRODUCT_IMAGE_MUTATION = gql`
+  mutation DeleteProductImage($imageId: String!) {
+    deleteProductImage(imageId: $imageId)
+  }
+`;
+
+export const SALES_REPORT_QUERY = gql`
+  query SalesReport($filters: SalesReportInput) {
+    salesReport(filters: $filters) {
+      title category dateRange
+      summary { totalOrders totalItemsSold grossSales discounts shipping refunds netRevenue }
+      rows { orderId orderDate productName category quantity unitPrice discount lineTotal orderTotal paymentStatus orderStatus }
+    }
+  }
+`;
+
+export const INVENTORY_REPORT_QUERY = gql`
+  query InventoryReport($filters: InventoryReportInput) {
+    inventoryReport(filters: $filters) {
+      title category
+      summary { totalProducts inStock lowStock outOfStock inventoryValue }
+      rows { productId productName category currentStock unitsSold stockStatus price inventoryValue }
+    }
+  }
+`;
+
 export const ADMIN_ORDERS_QUERY = gql`
   query AdminOrders {
     adminOrders {
