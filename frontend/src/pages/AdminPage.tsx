@@ -89,6 +89,11 @@ export const AdminPage: React.FC = () => {
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerMediaType, setBannerMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
+  const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+  const [bannerOrder, setBannerOrder] = useState(0);
+  const [bannerActive, setBannerActive] = useState(true);
 
   // Stock dialog state
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -166,10 +171,8 @@ export const AdminPage: React.FC = () => {
   });
 
   const createBannerMutation = useMutation({
-    mutationFn: async () => {
-      if (!token || !bannerFile) throw new Error('Select a banner image');
-      const uploaded = await uploadBannerImage(bannerFile, token);
-      return getGqlClient().request(CREATE_BANNER_MUTATION, { title: bannerTitle || 'Toy Store', subtitle: bannerSubtitle || undefined, imageUrl: uploaded.url, mediaType: uploaded.mediaType });
+    mutationFn: (variables: any) => {
+      return getGqlClient().request(CREATE_BANNER_MUTATION, variables);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['adminBanners'] }); setBannerTitle(''); setBannerSubtitle(''); setBannerFile(null); },
   });
@@ -182,11 +185,54 @@ export const AdminPage: React.FC = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminBanners'] }),
   });
 
-  const editBannerText = (banner: any) => {
-    const title = window.prompt('Banner title', banner.title);
-    if (title === null) return;
-    const subtitle = window.prompt('Banner subtitle', banner.subtitle || '') || undefined;
-    bannerMutation.mutate({ id: banner.id, title, subtitle });
+  const openCreateBanner = () => {
+    setEditingBannerId(null);
+    setBannerTitle('');
+    setBannerSubtitle('');
+    setBannerMediaType('IMAGE');
+    setBannerOrder(banners.length);
+    setBannerActive(true);
+    setBannerFile(null);
+    setBannerDialogOpen(true);
+  };
+
+  const openEditBanner = (banner: any) => {
+    setEditingBannerId(banner.id);
+    setBannerTitle(banner.title);
+    setBannerSubtitle(banner.subtitle || '');
+    setBannerMediaType(banner.mediaType === 'VIDEO' ? 'VIDEO' : 'IMAGE');
+    setBannerOrder(banner.displayOrder);
+    setBannerActive(banner.isActive);
+    setBannerFile(null);
+    setBannerDialogOpen(true);
+  };
+
+  const handleBannerFile = (file: File | null) => {
+    if (!file) return;
+    const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const allowed = bannerMediaType === 'IMAGE' ? ['.jpg', '.jpeg', '.png', '.heic', '.heif'] : ['.mp4', '.webm'];
+    if (file.size > 10 * 1024 * 1024 || !allowed.includes(extension)) {
+      window.alert(`Choose a valid ${bannerMediaType === 'IMAGE' ? 'JPG, JPEG, PNG, HEIC or HEIF image' : 'MP4 or WebM video'} under 10 MB.`);
+      return;
+    }
+    setBannerFile(file);
+  };
+
+  const saveBanner = async () => {
+    if (!token || !bannerTitle.trim()) return;
+    let imageUrl: string | undefined;
+    let mediaType: string | undefined;
+    if (bannerFile) {
+      const uploaded = await uploadBannerImage(bannerFile, token);
+      imageUrl = uploaded.url;
+      mediaType = uploaded.mediaType;
+    }
+    if (editingBannerId) {
+      bannerMutation.mutate({ id: editingBannerId, title: bannerTitle.trim(), subtitle: bannerSubtitle || undefined, imageUrl, mediaType: mediaType || bannerMediaType, displayOrder: bannerOrder, isActive: bannerActive });
+    } else if (imageUrl) {
+      createBannerMutation.mutate({ title: bannerTitle.trim(), subtitle: bannerSubtitle || undefined, imageUrl, mediaType });
+    }
+    setBannerDialogOpen(false);
   };
 
   const metrics = (metricsData as any)?.adminMetrics;
@@ -501,25 +547,15 @@ export const AdminPage: React.FC = () => {
       {activeTab === 7 && canManageUsers && (
         <Stack spacing={3}>
           <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #E2E0F0' }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Add Hero Banner</Typography>
-            <Stack spacing={2}>
-              <TextField label="Title" value={bannerTitle} onChange={(e) => setBannerTitle(e.target.value)} fullWidth />
-              <TextField label="Subtitle" value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} fullWidth />
-              <Button component="label" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
-                {bannerFile ? bannerFile.name : 'Choose Banner Image'}
-                <input hidden type="file" accept=".jpg,.jpeg,.png,.heic,.heif,.mp4,.webm" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
-              </Button>
-              <Button variant="contained" sx={{ alignSelf: 'flex-start' }} disabled={!bannerFile || createBannerMutation.isPending} onClick={() => createBannerMutation.mutate()}>
-                {createBannerMutation.isPending ? 'Uploading...' : 'Add Banner'}
-              </Button>
-            </Stack>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Hero Banners</Typography>
+            <Button variant="contained" startIcon={<Plus size={18} />} onClick={openCreateBanner}>Add Hero Banner</Button>
           </Paper>
           <TableContainer component={Paper} sx={{ borderRadius: 4, border: '1px solid #E2E0F0' }}>
             <Table><TableHead><TableRow><TableCell>Preview</TableCell><TableCell>Title</TableCell><TableCell>Order</TableCell><TableCell>Status</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>
               {banners.map((banner: any) => <TableRow key={banner.id}>
                 <TableCell>{banner.mediaType === 'VIDEO' ? <Box component="video" src={banner.imageUrl} muted sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} /> : <Box component="img" src={banner.imageUrl} alt={banner.title} sx={{ width: 120, height: 54, objectFit: 'cover', borderRadius: 2 }} />}</TableCell>
                 <TableCell>{banner.title}</TableCell><TableCell><TextField size="small" type="number" value={banner.displayOrder} onChange={(e) => bannerMutation.mutate({ id: banner.id, displayOrder: Number(e.target.value) })} sx={{ width: 80 }} /></TableCell><TableCell>{banner.isActive ? 'Active' : 'Disabled'}</TableCell>
-                <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => editBannerText(banner)}>Edit</Button><Button size="small" onClick={() => bannerMutation.mutate({ id: banner.id, isActive: !banner.isActive })}>{banner.isActive ? 'Disable' : 'Enable'}</Button><Button size="small" color="error" onClick={() => window.confirm(`Delete banner ${banner.title}?`) && deleteBannerMutation.mutate(banner.id)}>Delete</Button></Stack></TableCell>
+                <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => openEditBanner(banner)}>Edit</Button><Button size="small" onClick={() => bannerMutation.mutate({ id: banner.id, isActive: !banner.isActive })}>{banner.isActive ? 'Disable' : 'Enable'}</Button><Button size="small" color="error" onClick={() => window.confirm(`Delete banner ${banner.title}?`) && deleteBannerMutation.mutate(banner.id)}>Delete</Button></Stack></TableCell>
               </TableRow>)}
             </TableBody></Table>
             {!banners.length && <Alert sx={{ m: 2 }} severity="info">No hero banners found.</Alert>}
@@ -528,6 +564,41 @@ export const AdminPage: React.FC = () => {
       )}
 
       {canManageUsers && <Box ref={reportsRef} sx={{ mt: 5, scrollMarginTop: 96 }}><ReportsPanel /></Box>}
+
+      <Dialog open={bannerDialogOpen} onClose={() => setBannerDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingBannerId ? 'Edit Hero Banner' : 'Add Hero Banner'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField label="Title" value={bannerTitle} onChange={(e) => setBannerTitle(e.target.value)} fullWidth />
+            <TextField label="Subtitle" value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} fullWidth />
+            <FormControl fullWidth>
+              <InputLabel>Media Type</InputLabel>
+              <Select value={bannerMediaType} label="Media Type" onChange={(e) => { setBannerMediaType(e.target.value as 'IMAGE' | 'VIDEO'); setBannerFile(null); }}>
+                <MenuItem value="IMAGE">Image</MenuItem>
+                <MenuItem value="VIDEO">Video</MenuItem>
+              </Select>
+            </FormControl>
+            <Button component="label" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
+              {bannerFile ? bannerFile.name : bannerMediaType === 'IMAGE' ? 'Choose Banner Image' : 'Choose Banner Video'}
+              <input hidden type="file" accept={bannerMediaType === 'IMAGE' ? '.jpg,.jpeg,.png,.heic,.heif' : '.mp4,.webm'} onChange={(e) => handleBannerFile(e.target.files?.[0] || null)} />
+            </Button>
+            <Stack direction="row" spacing={2}>
+              <TextField label="Display Order" type="number" value={bannerOrder} onChange={(e) => setBannerOrder(Number(e.target.value))} fullWidth />
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select value={bannerActive ? 'active' : 'disabled'} label="Status" onChange={(e) => setBannerActive(e.target.value === 'active')}>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="disabled">Disabled</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBannerDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveBanner} disabled={!bannerTitle.trim() || (!editingBannerId && !bannerFile) || createBannerMutation.isPending || bannerMutation.isPending}>{editingBannerId ? 'Save Banner' : 'Add Banner'}</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Stock Dialog */}
       <Dialog open={productDialogOpen} onClose={() => setProductDialogOpen(false)} maxWidth="sm" fullWidth>

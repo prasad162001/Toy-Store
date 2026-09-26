@@ -33,6 +33,8 @@ export class BannersService {
   }
 
   async updateBanner(id: string, data: { title?: string; subtitle?: string; imageUrl?: string; mediaType?: string; ctaText?: string; ctaLink?: string; displayOrder?: number; isActive?: boolean }) {
+    const existing = await this.prisma.banner.findUnique({ where: { id } });
+    if (existing && data.imageUrl && data.imageUrl !== existing.imageUrl) await this.imageStorage.remove(existing.imageUrl);
     return this.prisma.banner.update({ where: { id }, data });
   }
 
